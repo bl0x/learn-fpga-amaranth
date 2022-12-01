@@ -1,31 +1,38 @@
 from amaranth import *
 from amaranth_boards.arty_a7 import *
 
-# Any Elaboratable class is used to generate HDL output
-class Blink(Elaboratable):
+from soc import SOC
 
-    def elaborate(self, platform):
+# A platform contains board specific information about FPGA pin assignments,
+# toolchain and specific information for uploading the bitfile.
+platform = ArtyA7_35Platform(toolchain="Symbiflow")
 
-        # Get access to the 'led' resource defined by the board definition
-        # from amaranth-boards.
-        led0 = platform.request('led', 0)
+# We need a top level module
+m = Module()
 
-        # Create a new module
-        m = Module()
+# This is the instance of our SOC
+soc = SOC()
 
-        # A Signal is usually created with its number of bits (default = 1).
-        count = Signal(5)
+# The SOC is turned into a submodule (fragment) of our top level module.
+m.submodules.soc = soc
 
-        # In the sync domain all logic is clocked at the positive edge of
-        # the implicit clk signal.
-        m.d.sync += count.eq(count + 1)
+# The platform allows access to the various resources defined by the board
+# definition from amaranth-boards.
+led0 = platform.request('led', 0)
+led1 = platform.request('led', 1)
+led2 = platform.request('led', 2)
+led3 = platform.request('led', 3)
+rgb = platform.request('rgb_led')
 
-        # The comb domain contains logic that is unclocked and purely
-        # combinatorial.
-        m.d.comb += led0.o.eq(count)
+# We connect the SOC leds signal to the various LEDs on the board.
+m.d.comb += [
+    led0.o.eq(soc.leds[0]),
+    led1.o.eq(soc.leds[1]),
+    led1.o.eq(soc.leds[2]),
+    led1.o.eq(soc.leds[3]),
+    rgb.r.o.eq(soc.leds[4]),
+]
 
-        return m
-
-if __name__ == "__main__":
-    platform = ArtyA7_35Platform(toolchain="Symbiflow")
-    platform.build(Blink(), do_program=False)
+# To generate the bitstream, we build() the platform using our top level
+# module m.
+platform.build(m, do_program=False)
