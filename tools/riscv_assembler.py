@@ -305,7 +305,9 @@ class RiscvAssembler():
         if len(arg) == 0:
             return None
         if arg in self.labels:
-            return self.labels[arg]
+            offset = self.labels[arg] - self.pc
+            # print("label offset = {}".format(offset))
+            return offset
         try:
             return int(arg)
         except ValueError as e:
