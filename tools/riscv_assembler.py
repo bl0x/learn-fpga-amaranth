@@ -71,6 +71,19 @@ SInstructions = [
 ]
 SOps = [x[0] for x in SInstructions]
 
+SysInstructions = [
+    ("FENCE",),
+    ("FENCE_I",),
+    ("ECALL",),
+    ("EBREAK",),
+    ("CSRRW",),
+    ("CSRRS",),
+    ("CSRRWI",),
+    ("CSRRSI",),
+    ("CSRRCI",)
+]
+SysOps = [x[0] for x in SysInstructions]
+
 class Instruction():
     def __init__(self, op, *args):
         self.op = op
@@ -84,9 +97,47 @@ class Instruction():
         text += ")"
         return "({:4} {})".format(self.op, text)
 
+abi_names = {
+    'zero': 0,
+    'ra'  : 1,
+    'sp'  : 2,
+    'gp'  : 3,
+    'tp'  : 4,
+    't0'  : 5,
+    't1'  : 6,
+    't2'  : 7,
+    'fp'  : 8,
+    's0'  : 8,
+    's1'  : 9,
+    'a0'  : 10,
+    'a1'  : 11,
+    'a2'  : 12,
+    'a3'  : 13,
+    'a4'  : 14,
+    'a5'  : 15,
+    'a6'  : 16,
+    'a7'  : 17,
+    's2'  : 18,
+    's3'  : 19,
+    's4'  : 20,
+    's5'  : 21,
+    's6'  : 22,
+    's7'  : 23,
+    's8'  : 24,
+    's9'  : 25,
+    's10' : 26,
+    's11' : 27,
+    't3'  : 28,
+    't4'  : 29,
+    't5'  : 30,
+    't6'  : 31
+}
+
 def reg2int(arg):
     if len(arg) == 0:
         return None
+    if arg.lower() in abi_names:
+        return abi_names[arg.lower()]
     if arg[0].upper() == "X":
         return int(arg[1:])
 
@@ -194,6 +245,19 @@ class RiscvAssembler():
         _, f3 = [x for x in SInstructions if x[0] == instruction.op][0]
         return self.encodeS(imm, rs2, rs1, f3, 0b0100011)
 
+    def encodeSysops(self, instruction):
+        op = instruction.op
+        if op == "FENCE": #! TODO
+            return 0b00000000000000000000000001110011
+        elif op == "FENCE_I":
+            return 0b00000000000000000001000001110011
+        elif op == "ECALL":
+            return 0b00000000000000000000000001110011
+        elif op == "EBREAK":
+            return 0b00000000000100000000000001110011
+        else:
+            print("Unhandled system op {}".format(op))
+
     def encode(self, instruction):
         encoded = 0
         if instruction.op in ROps:
@@ -212,6 +276,8 @@ class RiscvAssembler():
             encoded = self.encodeLops(instruction)
         elif instruction.op in SOps:
             encoded = self.encodeSops(instruction)
+        elif instruction.op in SysOps:
+            encoded = self.encodeSysops(instruction)
         else:
             print("Unhandled instruction / opcode {}".format(instruction))
             exit(1)
@@ -222,17 +288,22 @@ class RiscvAssembler():
     def read(self, text):
         instructions = []
         for line in text.splitlines():
-            op, rest = [x.strip().upper() for x in (
-                line.strip().split(' ', maxsplit=1))]
-            # print("op = {}, rest = {}".format(op, rest))
-            items = [x.strip() for x in rest.split(',')]
-            i = Instruction(op, *items)
+            line = line.strip()
+            if ' ' not in line:
+                i = Instruction(line)
+            else:
+                op, rest = [x.strip().upper() for x in (
+                    line.split(' ', maxsplit=1))]
+                # print("op = {}, rest = {}".format(op, rest))
+                items = [x.strip() for x in rest.split(',')]
+                i = Instruction(op, *items)
             instructions.append(i)
         self.instructions += instructions
 
 a = RiscvAssembler()
 a.read("""ADD x3, x2, x1
        ADDI  x1, x0,  4
+       ADDI  ra, zero,  4
        AND   x2, x1, x0
        SUB   x4, x1, x0
        SRAI  x4, x1,  3
@@ -254,6 +325,7 @@ a.read("""ADD x3, x2, x1
        SB    x7, x10, 1
        SH    x7, x10, 2
        SW    x7, x10, 3
+       EBREAK
 """)
 print(a.instructions)
 a.assemble()
