@@ -141,14 +141,6 @@ def reg2int(arg):
     if arg[0].upper() == "X":
         return int(arg[1:])
 
-def imm2int(arg):
-    if len(arg) == 0:
-        return None
-    try:
-        return int(arg)
-    except ValueError as e:
-        return int(arg, 16)
-
 class RiscvAssembler():
     def __init__(self):
         self.pc = 0
@@ -199,49 +191,49 @@ class RiscvAssembler():
 
     def encodeIops(self, instruction):
         rd, rs = reg2int(instruction.args[0]), reg2int(instruction.args[1])
-        imm = imm2int(instruction.args[2])
+        imm = self.imm2int(instruction.args[2])
         _, f3 = [x for x in IInstructions if x[0] == instruction.op][0]
         return self.encodeI(imm, rs, f3, rd, 0b0010011)
 
     def encodeIRops(self, instruction):
         rd, rs = reg2int(instruction.args[0]), reg2int(instruction.args[1])
-        imm = imm2int(instruction.args[2])
+        imm = self.imm2int(instruction.args[2])
         _, f3, f7 = [x for x in IRInstructions if x[0] == instruction.op][0]
         return self.encodeR(f7, imm, rs, f3, rd, 0b0010011)
 
     def encodeJops(self, instruction):
         if instruction.op == "JAL":
             rd = reg2int(instruction.args[0])
-            imm = imm2int(instruction.args[1])
+            imm = self.imm2int(instruction.args[1])
             _, op = [x for x in JInstructions if x[0] == instruction.op][0]
             return self.encodeJ(imm, rd, 0b1101111)
         elif instruction.op == "JALR":
             rd, rs = reg2int(instruction.args[0]), reg2int(instruction.args[1])
-            imm = imm2int(instruction.args[2])
+            imm = self.imm2int(instruction.args[2])
             _, op, f3 = [x for x in JInstructions if x[0] == instruction.op][0]
             return self.encodeI(imm, rs, f3, rd, 0b1100111)
 
     def encodeBops(self, instruction):
         rs1, rs2 = reg2int(instruction.args[0]), reg2int(instruction.args[1])
-        imm = imm2int(instruction.args[2])
+        imm = self.imm2int(instruction.args[2])
         _, f3 = [x for x in BInstructions if x[0] == instruction.op][0]
         return self.encodeB(imm, rs2, rs1, f3, 0b1100011)
 
     def encodeUops(self, instruction):
         rd = reg2int(instruction.args[0])
-        imm = imm2int(instruction.args[1])
+        imm = self.imm2int(instruction.args[1])
         _, op = [x for x in UInstructions if x[0] == instruction.op][0]
         return self.encodeU(imm, rd, op)
 
     def encodeLops(self, instruction):
         rd, rs = reg2int(instruction.args[0]), reg2int(instruction.args[1])
-        imm = imm2int(instruction.args[2])
+        imm = self.imm2int(instruction.args[2])
         _, f3 = [x for x in LInstructions if x[0] == instruction.op][0]
         return self.encodeI(imm, rs, f3, rd, 0b0000011)
 
     def encodeSops(self, instruction):
         rs2, rs1 = reg2int(instruction.args[0]), reg2int(instruction.args[1])
-        imm = imm2int(instruction.args[2])
+        imm = self.imm2int(instruction.args[2])
         _, f3 = [x for x in SInstructions if x[0] == instruction.op][0]
         return self.encodeS(imm, rs2, rs1, f3, 0b0100011)
 
@@ -289,6 +281,14 @@ class RiscvAssembler():
         instructions = []
         for line in text.splitlines():
             line = line.strip()
+            i = None
+            if ':' in line:
+                label, line = [x.strip() for x in line.split(':', maxsplit=1)]
+                pc = len(instructions) * 4
+                self.labels[label.upper()] = pc
+                print("found label '{}', pc = {}".format(label, pc))
+            if len(line) == 0:
+                continue
             if ' ' not in line:
                 i = Instruction(line)
             else:
@@ -297,31 +297,50 @@ class RiscvAssembler():
                 # print("op = {}, rest = {}".format(op, rest))
                 items = [x.strip() for x in rest.split(',')]
                 i = Instruction(op, *items)
-            instructions.append(i)
+            if i is not None:
+                instructions.append(i)
         self.instructions += instructions
+
+    def imm2int(self, arg):
+        if len(arg) == 0:
+            return None
+        if arg in self.labels:
+            return self.labels[arg]
+        try:
+            return int(arg)
+        except ValueError as e:
+            return int(arg, 16)
+
 
 a = RiscvAssembler()
 a.read("""ADD x3, x2, x1
+       start:
        ADDI  x1, x0,  4
        ADDI  ra, zero,  4
        AND   x2, x1, x0
        SUB   x4, x1, x0
        SRAI  x4, x1,  3
+       jumps:
        JAL   x4, 255
-       JALR  x5, x7,  9
+       JALR  x5, x7,  start
+       branches:
        BEQ   x3, x4,  1
        BNE   x3, x4,  1
        BLT   x3, x4,  1
        BGE   x3, x4,  1
        BLTU  x3, x4,  1
        BGEU  x3, x4,  1
-       LUI   x5,  0x30000
+       luiandauipc:
+       lui: LUI   x5,  0x30000
        AUIPC x5,  0x30000
+       load:
        LB    x7, x10, 0xaa
        LH    x7, x10, 0xab
        LW    x7, x10, 0xac
        LBU   x7, x10, 0xad
        LHU   x7, x10, 0xae
+       finish:
+       store:
        SB    x7, x10, 1
        SH    x7, x10, 2
        SW    x7, x10, 3
