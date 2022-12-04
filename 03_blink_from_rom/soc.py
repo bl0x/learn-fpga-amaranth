@@ -29,11 +29,9 @@ class SOC(Elaboratable):
         ]
 
         pc = Signal(5)
-        mem = [Signal(5, reset=x) for x in sequence]
+        mem = Array([Signal(5, reset=x) for x in sequence])
 
-        m.d.slow += [
-            pc.eq(0 if (pc == len(sequence)) else (pc + 1))
-        ]
-        m.d.comb += self.leds.eq(count)
+        m.d.slow += pc.eq(Mux(pc == len(sequence), 0, pc + 1))
+        m.d.comb += self.leds.eq(mem[pc])
 
         return m
