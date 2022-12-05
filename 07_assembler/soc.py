@@ -120,7 +120,7 @@ class SOC(Elaboratable):
             # Assign important signals to LEDS
             m.d.comb += self.leds.eq(Mux(isSystem, 31, (1 << fsm.state)))
             with m.State("FETCH_INSTR"):
-                m.d.slow += instr.eq(mem[pc])
+                m.d.slow += instr.eq(mem[pc[2:32]])
                 m.next = "FETCH_REGS"
             with m.State("FETCH_REGS"):
                 m.d.slow += [
@@ -129,7 +129,7 @@ class SOC(Elaboratable):
                 ]
                 m.next = "EXECUTE"
             with m.State("EXECUTE"):
-                m.d.slow += pc.eq(pc + 1)
+                m.d.slow += pc.eq(pc + 4)
                 m.next = "FETCH_INSTR"
 
         # Register write back
