@@ -106,7 +106,6 @@ class SOC(Elaboratable):
                 m.d.slow += pc.eq(pc + 1)
                 m.next = "FETCH_INSTR"
 
-
         # Export signals for simulation
         def export(signal, name):
             if type(signal) is not Signal:
