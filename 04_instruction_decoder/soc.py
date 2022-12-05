@@ -87,6 +87,7 @@ class SOC(Elaboratable):
         m.d.comb += self.leds.eq(Mux(isSystem, 31, Cat(isLoad, Cat(
             isStore, Cat(isALUimm, Cat(isALUreg, pc[0]))))))
 
+        # Export signals for simulation
         def export(signal, name):
             if type(signal) is not Signal:
                 newsig = Signal(signal.shape(), name = name)
@@ -96,7 +97,6 @@ class SOC(Elaboratable):
             self.ports.append(newsig)
             setattr(self, name, newsig)
 
-        # Export signals for simulation
         if platform is None:
             export(pc, "pc")
             export(instr, "instr")
