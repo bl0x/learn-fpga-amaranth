@@ -1,3 +1,4 @@
+import sys
 from amaranth import *
 
 from clockworks import Clockworks
@@ -8,6 +9,9 @@ class SOC(Elaboratable):
 
         self.leds = Signal(5)
 
+        # Signals in this list can easily be plotted as vcd traces
+        self.ports = []
+
     def elaborate(self, platform):
 
         m = Module()
@@ -15,6 +19,7 @@ class SOC(Elaboratable):
         cw = Clockworks(slow=21)
         m.submodules.cw = cw
 
+        # Instruction sequence to be executed
         sequence = [
                 #       24      16       8       0
                 # .......|.......|.......|.......|
@@ -33,74 +38,44 @@ class SOC(Elaboratable):
                 0b00000000000100000000000001110011  # S ebreak
         ]
 
-        # Signal declarations
-        isALUreg = Signal()
-        isALUimm = Signal()
-        isBranch = Signal()
-        isJALR = Signal()
-        isJAL = Signal()
-        isAUIPC = Signal()
-        isLUI = Signal()
-        isLoad = Signal()
-        isStore = Signal()
-        isSystem = Signal()
-
-        Uimm, Iimm, Bimm, Simm, Jimm = [Signal(32) for _ in range(5)]
-        rs1Id, rs2Id, rdId = [Signal(5) for _ in range(3)]
-        funct3, funct7 = [Signal(3), Signal(7)]
-
+        # Program counter
         pc = Signal(32)
+
+        # Current instruction
         instr = Signal(32, reset=0b0110011)
+
+        # Instruction memory initialised with above 'sequence'
         mem = Array([Signal(32, reset=x) for x in sequence])
 
-        self.pc = pc
-        self.instr = instr
-        self.isALUreg = isALUreg
-        self.isALUimm = isALUimm
-        self.isSystem = isSystem
-        self.rdId = rdId
-        self.rs1Id = rs1Id
-        self.rs2Id = rs2Id
-        self.Iimm = Iimm
-        self.funct3 = funct3
-
         # Opcode decoder
-        m.d.comb += [
-            isALUreg.eq(instr[0:7] == 0b0110011),
-            isALUimm.eq(instr[0:7] == 0b0010011),
-            isBranch.eq(instr[0:7] == 0b1100011),
-            isJALR.eq(  instr[0:7] == 0b1100111),
-            isJAL.eq(   instr[0:7] == 0b1101111),
-            isAUIPC.eq( instr[0:7] == 0b0010111),
-            isLUI.eq(   instr[0:7] == 0b0110111),
-            isLoad.eq(  instr[0:7] == 0b0000011),
-            isStore.eq( instr[0:7] == 0b0100011),
-            isSystem.eq(instr[0:7] == 0b1110011),
-        ]
+        isALUreg = (instr[0:7] == 0b0110011)
+        isALUimm = (instr[0:7] == 0b0010011)
+        isBranch = (instr[0:7] == 0b1100011)
+        isJALR =   (instr[0:7] == 0b1100111)
+        isJAL =    (instr[0:7] == 0b1101111)
+        isAUIPC =  (instr[0:7] == 0b0010111)
+        isLUI =    (instr[0:7] == 0b0110111)
+        isLoad =   (instr[0:7] == 0b0000011)
+        isStore =  (instr[0:7] == 0b0100011)
+        isSystem = (instr[0:7] == 0b1110011)
 
         # Immediate format decoder
-        m.d.comb += [
-            Uimm.eq(Cat(Repl(0, 12), instr[12:32])),
-            Iimm.eq(Cat(instr[20:31], Repl(instr[31], 21))),
-            Simm.eq(Cat(instr[7:12], Cat(instr[25:31], Repl(instr[31], 21)))),
-            Bimm.eq(Cat(0, Cat(instr[8:12], Cat(instr[25:31], Cat(
-                instr[7], Repl(instr[31], 20)))))),
-            Jimm.eq(Cat(0, Cat(instr[21:31], Cat(instr[20], Cat(
-                instr[12:20], Repl(instr[31], 12))))))
-        ]
+        Uimm = (Cat(Repl(0, 12), instr[12:32]))
+        Iimm = (Cat(instr[20:31], Repl(instr[31], 21)))
+        Simm = (Cat(instr[7:12], Cat(instr[25:31], Repl(instr[31], 21)))),
+        Bimm = (Cat(0, Cat(instr[8:12], Cat(instr[25:31], Cat(
+            instr[7], Repl(instr[31], 20))))))
+        Jimm = (Cat(0, Cat(instr[21:31], Cat(instr[20], Cat(
+            instr[12:20], Repl(instr[31], 12))))))
 
         # Register addresses decoder
-        m.d.comb += [
-            rs1Id.eq(instr[15:20]),
-            rs2Id.eq(instr[20:25]),
-            rdId.eq( instr[7:12])
-        ]
+        rs1Id = (instr[15:20])
+        rs2Id = (instr[20:25])
+        rdId = ( instr[7:12])
 
         # Function code decdore
-        m.d.comb += [
-            funct3.eq(instr[12:15]),
-            funct7.eq(instr[25:32])
-        ]
+        funct3 = (instr[12:15])
+        funct7 = (instr[25:32])
 
         # Fetch instruction and increase PC
         m.d.slow += [
@@ -111,5 +86,29 @@ class SOC(Elaboratable):
         # Assign important signals to LEDS
         m.d.comb += self.leds.eq(Mux(isSystem, 31, Cat(isLoad, Cat(
             isStore, Cat(isALUimm, Cat(isALUreg, pc[0]))))))
+
+        def export(signal, name):
+            if type(signal) is not Signal:
+                newsig = Signal(signal.shape(), name = name)
+                m.d.comb += newsig.eq(signal)
+            else:
+                newsig = signal
+            self.ports.append(newsig)
+            setattr(self, name, newsig)
+
+        # Export signals for simulation
+        if platform is None:
+            export(pc, "pc")
+            export(instr, "instr")
+            export(isALUreg, "isALUreg")
+            export(isALUimm, "isALUimm")
+            export(isLoad, "isLoad")
+            export(isStore, "isStore")
+            export(isSystem, "isSystem")
+            export(rdId, "rdId")
+            export(rs1Id, "rs1Id")
+            export(rs2Id, "rs2Id")
+            export(Iimm, "Iimm")
+            export(funct3, "funct3")
 
         return m

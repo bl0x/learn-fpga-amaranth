@@ -19,8 +19,16 @@ def proc():
             print("LEDS = {:05b}".format((yield soc.leds)))
             if (yield soc.isALUreg):
                 print("ALUreg rd={} rs1={} rs2={} funct3={}".format(
+                    (yield soc.rdId), (yield soc.rs1Id), (yield soc.rs2Id),
+                    (yield soc.funct3)))
+            if (yield soc.isALUimm):
+                print("ALUimm rd={} rs1={} imm={} funct3={}".format(
                     (yield soc.rdId), (yield soc.rs1Id), (yield soc.Iimm),
                     (yield soc.funct3)))
+            if (yield soc.isLoad):
+                print("LOAD")
+            if (yield soc.isStore):
+                print("STORE")
             if (yield soc.isSystem):
                 print("SYSTEM")
                 break
@@ -30,6 +38,6 @@ def proc():
 sim.add_clock(1e-6)
 sim.add_sync_process(proc)
 
-with sim.write_vcd('bench.vcd'):
+with sim.write_vcd('bench.vcd', 'bench.gtkw', traces=soc.ports):
     # Let's run for a quite long time
-    sim.run_until(2)
+    sim.run_until(2, )
