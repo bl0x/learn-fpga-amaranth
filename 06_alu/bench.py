@@ -15,29 +15,33 @@ def proc():
         clk = yield soc.slow_clk
         if prev_clk == 0 and prev_clk != clk:
             state = (yield soc.state)
-            if state == 0:
-                print("---- FETCH -----------------------")
-                print("  pc={}".format((yield soc.pc)))
-                print("  instr={:#032b}".format((yield soc.instr)))
+            if state == 2:
+                print("-- NEW CYCLE -----------------------")
+                print("  F: LEDS = {:05b}".format((yield soc.leds)))
+                print("  F: pc={}".format((yield soc.pc)))
+                print("  F: instr={:#032b}".format((yield soc.instr)))
                 if (yield soc.isALUreg):
-                    print("  ALUreg rd={} rs1={} rs2={} funct3={}".format(
+                    print("     ALUreg rd={} rs1={} rs2={} funct3={}".format(
                         (yield soc.rdId), (yield soc.rs1Id), (yield soc.rs2Id),
                         (yield soc.funct3)))
                 if (yield soc.isALUimm):
-                    print("  ALUimm rd={} rs1={} imm={} funct3={}".format(
+                    print("     ALUimm rd={} rs1={} imm={} funct3={}".format(
                         (yield soc.rdId), (yield soc.rs1Id), (yield soc.Iimm),
                         (yield soc.funct3)))
                 if (yield soc.isLoad):
-                    print("  LOAD")
+                    print("    LOAD")
                 if (yield soc.isStore):
-                    print("  STORE")
+                    print("    STORE")
                 if (yield soc.isSystem):
-                    print("  SYSTEM")
+                    print("    SYSTEM")
                     break
-            if state == 2:
-                print("---- EXECUTE ---------------------")
-                print("  LEDS = {:05b}".format((yield soc.leds)))
-                print("  Writeback x{} = {:032b}".format((yield soc.rdId),
+            if state == 4:
+                print("  R: LEDS = {:05b}".format((yield soc.leds)))
+                print("  R: rs1={}".format((yield soc.rs1)))
+                print("  R: rs2={}".format((yield soc.rs2)))
+            if state == 1:
+                print("  E: LEDS = {:05b}".format((yield soc.leds)))
+                print("  E: Writeback x{} = {:032b}".format((yield soc.rdId),
                                              (yield soc.writeBackData)))
         yield
         prev_clk = clk

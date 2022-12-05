@@ -29,36 +29,47 @@ class SOC(Elaboratable):
                 # ......|....|....|..|....|......|
                 # add x1, x0, x0
                 #                    rs2   rs1  add  rd   ALUREG
+                # -> x1 = 0
                 0b00000000000000000000000010110011,
                 # addi x1, x1, 1
                 #             imm         rs1  add  rd   ALUIMM
+                # -> x1 = 1
                 0b00000000000100001000000010010011,
                 # addi x1, x1, 1
                 #             imm         rs1  add  rd   ALUIMM
+                # -> x1 = 2
                 0b00000000000100001000000010010011,
                 # addi x1, x1, 1
                 #             imm         rs1  add  rd   ALUIMM
+                # -> x1 = 3
                 0b00000000000100001000000010010011,
                 # addi x1, x1, 1
                 #             imm         rs1  add  rd   ALUIMM
+                # -> x1 = 4
                 0b00000000000100001000000010010011,
                 # add x2, x1, x0
                 #                    rs2   rs1  add  rd   ALUREG
+                # -> x2 = 4
                 0b00000000000000001000000100110011,
-                # add x2, x1, x0
+                # add x3, x1, x2
                 #                    rs2   rs1  add  rd   ALUREG
+                # -> x3 = 8
                 0b00000000001000001000000110110011,
                 # srli x3, x3, 3
                 #                   shamt   rs1  sr  rd   ALUIMM
+                # -> x3 = 1
                 0b00000000001100011101000110010011,
                 # slli x3, x3, 31
                 #                   shamt   rs1  sl  rd   ALUIMM
+                # -> x3 = 0x80000000
                 0b00000001111100011001000110010011,
                 # srai x3, x3, 5
                 #                   shamt   rs1  sr  rd   ALUIMM
+                # -> x3 = 0xfc000000
                 0b01000000010100011101000110010011,
                 # srli x1, x3, 26
                 #                   shamt   rs1  sr  rd   ALUIMM
+                # -> x1 = 0x3f
                 0b00000001101000011101000010010011,
 
                 0b00000000000100000000000001110011  # S ebreak
@@ -71,10 +82,10 @@ class SOC(Elaboratable):
         instr = Signal(32, reset=0b0110011)
 
         # Instruction memory initialised with above 'sequence'
-        mem = Array([Signal(32, reset=x) for x in sequence])
+        mem = Array([Signal(32, reset=x, name="mem") for x in sequence])
 
         # Register bank
-        regs = Array([Signal(32) for x in range(32)])
+        regs = Array([Signal(32, name="x"+str(x)) for x in range(32)])
         rs1 = Signal(32)
         rs2 = Signal(32)
 
@@ -118,28 +129,28 @@ class SOC(Elaboratable):
 
         with m.Switch(funct3) as alu:
             with m.Case(0b000):
-                m.d.slow += aluOut.eq(Mux(funct7[5] & instr[5],
+                m.d.comb += aluOut.eq(Mux(funct7[5] & instr[5],
                                           (aluIn1 - aluIn2), (aluIn1 + aluIn2)))
             with m.Case(0b001):
-                m.d.slow += aluOut.eq(aluIn1 << shamt)
+                m.d.comb += aluOut.eq(aluIn1 << shamt)
             with m.Case(0b010):
-                m.d.slow += aluOut.eq(aluIn1.as_signed() < aluIn2.as_signed())
+                m.d.comb += aluOut.eq(aluIn1.as_signed() < aluIn2.as_signed())
             with m.Case(0b011):
-                m.d.slow += aluOut.eq(aluIn1 < aluIn2)
+                m.d.comb += aluOut.eq(aluIn1 < aluIn2)
             with m.Case(0b100):
-                m.d.slow += aluOut.eq(aluIn1 ^ aluIn2)
+                m.d.comb += aluOut.eq(aluIn1 ^ aluIn2)
             with m.Case(0b101):
-                m.d.slow += aluOut.eq(Mux(
+                m.d.comb += aluOut.eq(Mux(
                     funct7[5],
                     (aluIn1.as_signed() >> shamt),     # arithmetic right shift
                     (aluIn1.as_unsigned() >> shamt)))  # logical right shift
             with m.Case(0b110):
-                m.d.slow += aluOut.eq(aluIn1 | aluIn2)
+                m.d.comb += aluOut.eq(aluIn1 | aluIn2)
             with m.Case(0b111):
-                    m.d.slow += aluOut.eq(aluIn1 & aluIn2)
+                m.d.comb += aluOut.eq(aluIn1 & aluIn2)
 
         # Main state machine
-        with m.FSM(reset="FETCH_INSTR") as fsm:
+        with m.FSM(reset="FETCH_INSTR", domain="slow") as fsm:
             # Assign important signals to LEDS
             m.d.comb += self.leds.eq(Mux(isSystem, 31, (1 << fsm.state)))
             with m.State("FETCH_INSTR"):
@@ -187,7 +198,11 @@ class SOC(Elaboratable):
             export(Iimm, "Iimm")
             export(funct3, "funct3")
             export(rdId, "rdId")
+            export(rs1, "rs1")
+            export(rs2, "rs2")
             export(writeBackData, "writeBackData")
-            export(fsm.state, "state")
+            export(writeBackEn, "writeBackEn")
+            export(aluOut, "aluOut")
+            export((1 << fsm.state), "state")
 
         return m
