@@ -181,7 +181,7 @@ class RiscvAssembler():
     def encodeS(self, imm, rs2, rs1, f3, op):
         imm25 = (imm >> 5) & 0x7f
         imm7  = imm & 0x1f
-        return ((imm25 << 25) | (rs2 << 20) | (rs1 << 15)
+        return ((imm25 << 25) | (rs1 << 20) | (rs2 << 15)
                 | (f3 << 12) | (imm7 << 7) | op)
 
     def encodeRops(self, instruction):
@@ -315,8 +315,19 @@ class RiscvAssembler():
 
 
 a = RiscvAssembler()
-a.read("""ADD x3, x2, x1
+a.read("""begin:
+       step4:
+       ADD   x0, x0, x0
+       ADD   x1, x0, x0
+       ADDI  x1, x1,  1
+       ADDI  x1, x1,  1
+       ADDI  x1, x1,  1
+       ADDI  x1, x1,  1
+       LW    x2, x1,  0
+       SW    x2, x1,  0
+       EBREAK
        start:
+       ADD x3, x2, x1
        ADDI  x1, x0,  4
        ADDI  ra, zero,  4
        AND   x2, x1, x0
