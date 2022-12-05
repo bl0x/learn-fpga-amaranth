@@ -15,8 +15,18 @@ class SOC(Elaboratable):
 
         a = RiscvAssembler()
         a.read("""begin:
-        ADD x0, x0, x0
-        ADD x1, x0, x0
+        ADD  x0, x0, x0
+        ADD  x1, x0, x0
+        ADDI x1, x1,  1
+        ADDI x1, x1,  1
+        ADDI x1, x1,  1
+        ADDI x1, x1,  1
+        ADD  x2, x1, x0
+        ADD  x3, x1, x2
+        SRLI x3, x3,  3
+        SLLI x3, x3, 31
+        SRAI x3, x3,  5
+        SRLI x1, x3, 26
         EBREAK
         """)
 
