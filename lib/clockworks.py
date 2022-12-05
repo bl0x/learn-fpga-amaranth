@@ -4,13 +4,17 @@ from amaranth import *
 
 class Clockworks(Elaboratable):
 
-    def __init__(self, slow=0):
+    def __init__(self, slow=0, sim_slow=None):
 
         # Since the module provides a new clock domain, which is accessible
         # via the top level module, we don't need to explicitly provide the
         # slow clock signal as an output.
 
         self.slow = slow
+        if sim_slow == 0:
+            self.sim_slow = slow
+        else:
+            self.sim_slow = sim_slow
 
     def elaborate(self, platform):
 
@@ -22,7 +26,7 @@ class Clockworks(Elaboratable):
             if platform is None:
                 # Have the simulation run 256 times faster than the
                 # actual hardware
-                slow_bit = self.slow - 8 if self.slow > 8 else 0
+                slow_bit = self.sim_slow
             else:
                 slow_bit = self.slow
 
