@@ -150,7 +150,7 @@ class RiscvAssembler():
 
     def assemble(self):
         for inst in self.instructions:
-            self.encode(inst)
+            self.mem.append(self.encode(inst))
 
     def encodeR(self, f7, rs2, rs1, f3, rd, op):
         return ((f7 << 25) | (rs2 << 20) | (rs1 << 15)
@@ -276,6 +276,7 @@ class RiscvAssembler():
         print("  enc@pc=0x{:03x} {} -> 0b{:032b}".format(
             self.pc, instruction, encoded))
         self.pc += 4
+        return encoded
 
     def read(self, text):
         instructions = []
@@ -314,50 +315,51 @@ class RiscvAssembler():
             return int(arg, 16)
 
 
-a = RiscvAssembler()
-a.read("""begin:
-       step4:
-       ADD   x0, x0, x0
-       ADD   x1, x0, x0
-       ADDI  x1, x1,  1
-       ADDI  x1, x1,  1
-       ADDI  x1, x1,  1
-       ADDI  x1, x1,  1
-       LW    x2, x1,  0
-       SW    x2, x1,  0
-       EBREAK
-       start:
-       ADD x3, x2, x1
-       ADDI  x1, x0,  4
-       ADDI  ra, zero,  4
-       AND   x2, x1, x0
-       SUB   x4, x1, x0
-       SRAI  x4, x1,  3
-       jumps:
-       JAL   x4, 255
-       JALR  x5, x7,  start
-       branches:
-       BEQ   x3, x4,  1
-       BNE   x3, x4,  1
-       BLT   x3, x4,  1
-       BGE   x3, x4,  1
-       BLTU  x3, x4,  1
-       BGEU  x3, x4,  1
-       luiandauipc:
-       lui: LUI   x5,  0x30000
-       AUIPC x5,  0x30000
-       load:
-       LB    x7, x10, 0xaa
-       LH    x7, x10, 0xab
-       LW    x7, x10, 0xac
-       LBU   x7, x10, 0xad
-       LHU   x7, x10, 0xae
-       finish:
-       store:
-       SB    x7, x10, 1
-       SH    x7, x10, 2
-       SW    x7, x10, 3
-       EBREAK
-""")
-print(a.instructions)
-a.assemble()
+if __name__ == "__main__":
+    a = RiscvAssembler()
+    a.read("""begin:
+           step4:
+           ADD   x0, x0, x0
+           ADD   x1, x0, x0
+           ADDI  x1, x1,  1
+           ADDI  x1, x1,  1
+           ADDI  x1, x1,  1
+           ADDI  x1, x1,  1
+           LW    x2, x1,  0
+           SW    x2, x1,  0
+           EBREAK
+           start:
+           ADD x3, x2, x1
+           ADDI  x1, x0,  4
+           ADDI  ra, zero,  4
+           AND   x2, x1, x0
+           SUB   x4, x1, x0
+           SRAI  x4, x1,  3
+           jumps:
+           JAL   x4, 255
+           JALR  x5, x7,  start
+           branches:
+           BEQ   x3, x4,  1
+           BNE   x3, x4,  1
+           BLT   x3, x4,  1
+           BGE   x3, x4,  1
+           BLTU  x3, x4,  1
+           BGEU  x3, x4,  1
+           luiandauipc:
+           lui: LUI   x5,  0x30000
+           AUIPC x5,  0x30000
+           load:
+           LB    x7, x10, 0xaa
+           LH    x7, x10, 0xab
+           LW    x7, x10, 0xac
+           LBU   x7, x10, 0xad
+           LHU   x7, x10, 0xae
+           finish:
+           store:
+           SB    x7, x10, 1
+           SH    x7, x10, 2
+           SW    x7, x10, 3
+           EBREAK
+    """)
+    print(a.instructions)
+    a.assemble()
