@@ -157,7 +157,7 @@ class RiscvAssembler():
                 | (f3 << 12) | (rd << 7) | op)
 
     def encodeI(self, imm, rs, f3, rd, op):
-        return ((imm << 20) & 12) | (rs << 15) | (f3 << 12) | (rd << 7) | op
+        return ((imm & 0xfff) << 20) | (rs << 15) | (f3 << 12) | (rd << 7) | op
 
     def encodeJ(self, imm, rd, op):
         imm31 = (imm >> 20) & 1
