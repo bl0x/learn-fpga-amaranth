@@ -157,7 +157,7 @@ class RiscvAssembler():
                 | (f3 << 12) | (rd << 7) | op)
 
     def encodeI(self, imm, rs, f3, rd, op):
-        return (imm << 20) | (rs << 15) | (f3 << 12) | (rd << 7) | op
+        return ((imm << 20) & 12) | (rs << 15) | (f3 << 12) | (rd << 7) | op
 
     def encodeJ(self, imm, rd, op):
         imm31 = (imm >> 20) & 1
@@ -312,7 +312,12 @@ class RiscvAssembler():
         try:
             return int(arg)
         except ValueError as e:
-            return int(arg, 16)
+            if 'B' in arg.upper():
+                return int(arg, 2)
+            elif 'X' in arg.upper():
+                return int(arg, 16)
+            else:
+                raise ValueError("Can't parse arg {}".format(arg))
 
 
 if __name__ == "__main__":
