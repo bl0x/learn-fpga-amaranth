@@ -48,27 +48,27 @@ class CPU(Elaboratable):
         self.isSystem = isSystem
 
         # Immediate format decoder
-        Uimm = (Cat(Repl(0, 12), instr[12:32]))
-        Iimm = (Cat(instr[20:31], Repl(instr[31], 21)))
-        Simm = (Cat(instr[7:12], Cat(instr[25:31], Repl(instr[31], 21)))),
-        Bimm = (Cat(0, Cat(instr[8:12], Cat(instr[25:31], Cat(
-            instr[7], Repl(instr[31], 20))))))
-        Jimm = (Cat(0, Cat(instr[21:31], Cat(instr[20], Cat(
-            instr[12:20], Repl(instr[31], 12))))))
+        Uimm = Cat(Repl(0, 12), instr[12:32])
+        Iimm = Cat(instr[20:31], Repl(instr[31], 21))
+        Simm = Cat(instr[7:12], instr[25:31], Repl(instr[31], 21))
+        Bimm = Cat(0, instr[8:12], instr[25:31], instr[7],
+            Repl(instr[31], 20))
+        Jimm = Cat(0, instr[21:31], instr[20], instr[12:20],
+            Repl(instr[31], 12))
         self.Iimm = Iimm
 
         # Register addresses decoder
-        rs1Id = (instr[15:20])
-        rs2Id = (instr[20:25])
-        rdId = ( instr[7:12])
+        rs1Id = instr[15:20]
+        rs2Id = instr[20:25]
+        rdId = instr[7:12]
 
         self.rdId = rdId
         self.rs1Id = rs1Id
         self.rs2Id = rs2Id
 
         # Function code decdore
-        funct3 = (instr[12:15])
-        funct7 = (instr[25:32])
+        funct3 = instr[12:15]
+        funct7 = instr[25:32]
         self.funct3 = funct3
 
         # ALU
