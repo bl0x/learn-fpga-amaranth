@@ -48,7 +48,7 @@ class CPU(Elaboratable):
         self.isSystem = isSystem
 
         # Immediate format decoder
-        Uimm = Cat(Repl(0, 12), instr[12:32])
+        Uimm = Cat(Const(0, 12), instr[12:32])
         Iimm = Cat(instr[20:31], Repl(instr[31], 21))
         Simm = Cat(instr[7:12], instr[25:31], Repl(instr[31], 21))
         Bimm = Cat(0, instr[8:12], instr[25:31], instr[7],

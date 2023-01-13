@@ -62,7 +62,7 @@ class SOC(Elaboratable):
         isSystem = (instr[0:7] == 0b1110011)
 
         # Immediate format decoder
-        Uimm = (Cat(Repl(0, 12), instr[12:32]))
+        Uimm = (Cat(Const(0, 12), instr[12:32]))
         Iimm = (Cat(instr[20:31], Repl(instr[31], 21)))
         Simm = (Cat(instr[7:12], Cat(instr[25:31], Repl(instr[31], 21)))),
         Bimm = (Cat(0, Cat(instr[8:12], Cat(instr[25:31], Cat(
@@ -183,7 +183,6 @@ class SOC(Elaboratable):
             export(isLoad, "isLoad")
             export(isStore, "isStore")
             export(isSystem, "isSystem")
-            export(rdId, "rdId")
             export(rs1Id, "rs1Id")
             export(rs2Id, "rs2Id")
             export(Iimm, "Iimm")

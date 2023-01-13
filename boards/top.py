@@ -13,8 +13,26 @@ class Top(Elaboratable):
 
         if step == 1:
             path = "01_blink"
-        if step == 2:
+        elif step == 2:
             path = "02_slower_blinky"
+        elif step == 3:
+            path = "03_blink_from_rom"
+        elif step == 4:
+            path = "04_instruction_decoder"
+        elif step == 5:
+            path = "05_register_bank"
+        elif step == 6:
+            path = "06_alu"
+        elif step == 7:
+            path = "07_assembler"
+        elif step == 8:
+            path = "08_jumps"
+        elif step == 9:
+            path = "09_branches"
+        elif step == 10:
+            path = "10_lui_auipc"
+        elif step == 11:
+            path = "11_modules"
         else:
             print("Invalid step_number {}.".format(step))
             exit(1)

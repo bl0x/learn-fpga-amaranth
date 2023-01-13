@@ -182,7 +182,6 @@ class SOC(Elaboratable):
             export(isLoad, "isLoad")
             export(isStore, "isStore")
             export(isSystem, "isSystem")
-            export(rdId, "rdId")
             export(rs1Id, "rs1Id")
             export(rs2Id, "rs2Id")
             export(Iimm, "Iimm")
