@@ -33,6 +33,8 @@ class Top(Elaboratable):
             path = "10_lui_auipc"
         elif step == 11:
             path = "11_modules"
+        elif step == 12:
+            path = "12_size_optimisation"
         else:
             print("Invalid step_number {}.".format(step))
             exit(1)
