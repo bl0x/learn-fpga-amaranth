@@ -6,7 +6,7 @@ class CPU(Elaboratable):
         self.mem_addr = Signal(32)
         self.mem_rstrb = Signal()
         self.mem_rdata = Signal(32)
-        self.x1 = Signal(32)
+        self.x10 = Signal(32)
         self.fsm = None
 
     def elaborate(self, platform):
@@ -47,14 +47,17 @@ class CPU(Elaboratable):
         self.isStore = isStore
         self.isSystem = isSystem
 
+        def Extend(x, n):
+            return [x for i in range(n + 1)]
+
         # Immediate format decoder
-        Uimm = Cat(Repl(0, 12), instr[12:32])
-        Iimm = Cat(instr[20:31], Repl(instr[31], 21))
-        Simm = Cat(instr[7:12], instr[25:31], Repl(instr[31], 21))
+        Uimm = Cat(Const(0, 12), instr[12:32])
+        Iimm = Cat(instr[20:31], *Extend(instr[31], 21))
+        Simm = Cat(instr[7:12], instr[25:31], *Extend(instr[31], 21))
         Bimm = Cat(0, instr[8:12], instr[25:31], instr[7],
-            Repl(instr[31], 20))
+            *Extend(instr[31], 20))
         Jimm = Cat(0, instr[21:31], instr[20], instr[12:20],
-            Repl(instr[31], 12))
+            *Extend(instr[31], 12))
         self.Iimm = Iimm
 
         # Register addresses decoder
@@ -73,29 +76,42 @@ class CPU(Elaboratable):
 
         # ALU
         aluIn1 = rs1
-        aluIn2 = Mux(isALUreg, rs2, Iimm)
+        aluIn2 = Mux((isALUreg | isBranch), rs2, Iimm)
         shamt = Mux(isALUreg, rs2[0:5], instr[20:25])
 
         # Wire memory address to pc
         m.d.comb += self.mem_addr.eq(pc)
 
+        aluMinus = Cat(~aluIn1, C(0,1)) + Cat(aluIn2, C(0,1)) + 1
+        aluPlus = aluIn1 + aluIn2
+
+        EQ = aluMinus[0:32] == 0
+        LTU = aluMinus[32]
+        LT = Mux((aluIn1[31] ^ aluIn2[31]), aluIn1[31], aluMinus[32])
+
+        def flip32(x):
+            a = [x[i] for i in range(0, 32)]
+            return Cat(*reversed(a))
+
+        # TODO: check these again!
+        shifter_in = Mux(funct3 == 0b001, flip32(aluIn1), aluIn1)
+        shifter = Cat(shifter_in, (instr[30] & aluIn1[31])) >> aluIn2[0:5]
+        leftshift = flip32(shifter)
+
         with m.Switch(funct3) as alu:
             with m.Case(0b000):
                 m.d.comb += aluOut.eq(Mux(funct7[5] & instr[5],
-                                          (aluIn1 - aluIn2), (aluIn1 + aluIn2)))
+                                          aluMinus[0:32], aluPlus))
             with m.Case(0b001):
-                m.d.comb += aluOut.eq(aluIn1 << shamt)
+                m.d.comb += aluOut.eq(leftshift)
             with m.Case(0b010):
-                m.d.comb += aluOut.eq(aluIn1.as_signed() < aluIn2.as_signed())
+                m.d.comb += aluOut.eq(LT)
             with m.Case(0b011):
-                m.d.comb += aluOut.eq(aluIn1 < aluIn2)
+                m.d.comb += aluOut.eq(LTU)
             with m.Case(0b100):
                 m.d.comb += aluOut.eq(aluIn1 ^ aluIn2)
             with m.Case(0b101):
-                m.d.comb += aluOut.eq(Mux(
-                    funct7[5],
-                    (aluIn1.as_signed() >> shamt),     # arithmetic right shift
-                    (aluIn1.as_unsigned() >> shamt)))  # logical right shift
+                m.d.comb += aluOut.eq(shifter)
             with m.Case(0b110):
                 m.d.comb += aluOut.eq(aluIn1 | aluIn2)
             with m.Case(0b111):
@@ -103,26 +119,30 @@ class CPU(Elaboratable):
 
         with m.Switch(funct3) as alu_branch:
             with m.Case(0b000):
-                m.d.comb += takeBranch.eq(rs1 == rs2)
+                m.d.comb += takeBranch.eq(EQ)
             with m.Case(0b001):
-                m.d.comb += takeBranch.eq(rs1 != rs2)
+                m.d.comb += takeBranch.eq(~EQ)
             with m.Case(0b100):
-                m.d.comb += takeBranch.eq(rs1.as_signed() < rs2.as_signed())
+                m.d.comb += takeBranch.eq(LT)
             with m.Case(0b101):
-                m.d.comb += takeBranch.eq(rs1.as_signed() >= rs2.as_signed())
+                m.d.comb += takeBranch.eq(~LT)
             with m.Case(0b110):
-                m.d.comb += takeBranch.eq(rs1 < rs2)
+                m.d.comb += takeBranch.eq(LTU)
             with m.Case(0b111):
-                m.d.comb += takeBranch.eq(rs1 >= rs2)
+                m.d.comb += takeBranch.eq(~LTU)
             with m.Case("---"):
                 m.d.comb += takeBranch.eq(0)
 
         # Next program counter is either next intstruction or depends on
         # jump target
-        nextPc = Mux((isBranch & takeBranch), pc + Bimm,
-                     Mux(isJAL, pc + Jimm,
-                         Mux(isJALR, rs1 + Iimm,
-                             pc + 4)))
+        pcPlusImm = pc + Mux(instr[3], Jimm[0:32],
+                             Mux(instr[4], Uimm[0:32],
+                                 Bimm[0:32]))
+        pcPlus4 = pc + 4
+
+        nextPc = Mux(((isBranch & takeBranch) | isJAL), pcPlusImm,
+                     Mux(isJALR, Cat(C(0, 1), aluPlus[1:32]),
+                         pcPlus4))
 
         # Main state machine
         with m.FSM(reset="FETCH_INSTR") as fsm:
@@ -144,22 +164,18 @@ class CPU(Elaboratable):
                 m.next = "FETCH_INSTR"
 
         # Register write back
-        writeBackData = Mux((isJAL | isJALR), (pc + 4),
+        writeBackData = Mux((isJAL | isJALR), pcPlus4,
                             Mux(isLUI, Uimm,
-                                Mux(isAUIPC, (pc + Uimm), aluOut)))
-        writeBackEn = fsm.ongoing("EXECUTE") & (
-                isALUreg |
-                isALUimm |
-                isLUI    |
-                isAUIPC  |
-                isJAL    |
-                isJALR)
+                                Mux(isAUIPC, pcPlusImm, aluOut)))
+
+        writeBackEn = fsm.ongoing("EXECUTE") & ~isBranch & ~isStore
 
         self.writeBackData = writeBackData
 
         with m.If(writeBackEn & (rdId != 0)):
             m.d.sync += regs[rdId].eq(writeBackData)
             # Also assign to debug output to see what is happening
-            m.d.sync += self.x1.eq(writeBackData)
+            with m.If(rdId == 10):
+                m.d.sync += self.x10.eq(writeBackData)
 
         return m

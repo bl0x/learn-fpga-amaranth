@@ -35,6 +35,8 @@ class Top(Elaboratable):
             path = "11_modules"
         elif step == 12:
             path = "12_size_optimisation"
+        elif step == 13:
+            path = "13_subroutines"
         else:
             print("Invalid step_number {}.".format(step))
             exit(1)
