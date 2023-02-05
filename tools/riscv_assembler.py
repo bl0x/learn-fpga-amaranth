@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import re
 
 # instructions
 
@@ -84,6 +85,37 @@ SysInstructions = [
 ]
 SysOps = [x[0] for x in SysInstructions]
 
+PseudoInstructions = [
+    ("LI",),
+    ("CALL",),
+    ("RET",),
+    ("MV",),
+    ("NOP",),
+    ("J",),
+    ("BEQZ",),
+    ("BNEZ",),
+    ("BGT",),
+]
+PseudoOps = [x[0] for x in PseudoInstructions]
+
+class LabelRef():
+    def __init__(self, op, name, arg):
+        self.op = op
+        self.name = name
+        self.arg = arg
+    def __repr__(self):
+        text = "LABELREF({:4} {} {})".format(self.op, self.name, self.arg)
+        return text
+    @classmethod
+    def fromString(cls, string):
+        r = re.compile('[ ()]+')
+        args = r.split(string)
+        op = args[1]
+        name = args[2]
+        arg = args[3]
+        # print(args)
+        return cls(op, name, arg)
+
 class Instruction():
     def __init__(self, op, *args):
         self.op = op
@@ -145,6 +177,7 @@ class RiscvAssembler():
     def __init__(self):
         self.pc = 0
         self.labels = {}
+        self.pseudos = {}
         self.instructions = []
         self.mem = []
 
@@ -250,6 +283,58 @@ class RiscvAssembler():
         else:
             print("Unhandled system op {}".format(op))
 
+    def unravelPseudoOps(self, instruction):
+        op = instruction.op
+        instr = []
+        if op == "NOP":
+            instr.append(self.iFromLine("ADD x0, x0, x0"))
+        elif op == "LI":
+            rd = instruction.args[0]
+            imm = self.imm2int(instruction.args[1])
+            if imm == 0:
+                instr.append(self.iFromLine("ADD {}, zero, zero".format(rd)))
+            elif -2048 <= imm < 2048:
+                instr.append(self.iFromLine("ADDI {}, zero, {}".format(
+                    rd, imm)))
+            else:
+                imm2 = hex(imm + ((imm & 0x800) << 12))
+                imm12 = hex(imm & 0xfff)
+                instr.append(self.iFromLine("LUI {}, {}".format(rd, imm2)))
+                if imm12 != 0:
+                    instr.append(self.iFromLine("ADDI {}, {}, {}".format(
+                        rd, rd, imm12)))
+        elif op == "CALL":
+            ref1 = LabelRef(op, "offset", instruction.args[0])
+            ref2 = LabelRef(op, "offset12", instruction.args[0])
+            instr.append(self.iFromLine("AUIPC x6, {}".format(ref1)))
+            instr.append(self.iFromLine("JALR  x1, x6, {}".format(ref2)))
+        elif op == "RET":
+            instr.append(self.iFromLine("JALR  x0, x1, 0"))
+        elif op == "MV":
+            rd = instruction.args[0]
+            rs1 = instruction.args[1]
+            instr.append(self.iFromLine("ADD   {}, {}, zero".format(rd, rs1)))
+        elif op == "J":
+            ref = LabelRef(op, "imm", instruction.args[0])
+            instr.append(self.iFromLine("JAL   zero, {}".format(ref)))
+        elif op == "BEQZ":
+            rs1 = instruction.args[0]
+            ref = LabelRef(op, "imm", instruction.args[1])
+            instr.append(self.iFromLine("BEQ   {}, x0, {}".format(rs1, ref)))
+        elif op == "BNEZ":
+            rs1 = instruction.args[0]
+            ref = LabelRef(op, "imm", instruction.args[1])
+            instr.append(self.iFromLine("BNE   {}, x0, {}".format(rs1, ref)))
+        elif op == "BGT":
+            rs1 = instruction.args[0]
+            rs2 = instruction.args[1]
+            ref = LabelRef(op, "imm", instruction.args[2])
+            instr.append(self.iFromLine("BLT   {}, {}, {}".format(
+                rs2, rs1, ref)))
+        else:
+            return [instruction], False
+        return instr, True
+
     def encode(self, instruction):
         encoded = 0
         if instruction.op in ROps:
@@ -273,10 +358,29 @@ class RiscvAssembler():
         else:
             print("Unhandled instruction / opcode {}".format(instruction))
             exit(1)
+        for l in self.labels:
+            if self.labels[l] == self.pc:
+                print("  lab@pc=0x{:03x}={} -> {}".format(self.pc, self.pc, l))
+        if self.pc in self.pseudos:
+            print("  psu@pc=0x{:03x}={} -> {}".format(self.pc, self.pc,
+                                                      self.pseudos[self.pc]))
         print("  enc@pc=0x{:03x} {} -> 0b{:032b}".format(
             self.pc, instruction, encoded))
         self.pc += 4
         return encoded
+
+    def iFromLine(self, line):
+        line = line.strip()
+        if len(line) == 0:
+            return None
+        if ' ' not in line:
+            return Instruction(line)
+        else:
+            op, rest = [x.strip().upper() for x in (
+                line.split(' ', maxsplit=1))]
+            # print("op = {}, rest = {}".format(op, rest))
+            items = [x.strip() for x in rest.split(',')]
+            return Instruction(op, *items)
 
     def read(self, text):
         instructions = []
@@ -288,18 +392,15 @@ class RiscvAssembler():
                 pc = len(instructions) * 4
                 self.labels[label.upper()] = pc
                 print("found label '{}', pc = {}".format(label, pc))
-            if len(line) == 0:
-                continue
-            if ' ' not in line:
-                i = Instruction(line)
-            else:
-                op, rest = [x.strip().upper() for x in (
-                    line.split(' ', maxsplit=1))]
-                # print("op = {}, rest = {}".format(op, rest))
-                items = [x.strip() for x in rest.split(',')]
-                i = Instruction(op, *items)
+            i = self.iFromLine(line)
             if i is not None:
-                instructions.append(i)
+                unravelled, isPseudo = self.unravelPseudoOps(i)
+                if isPseudo:
+                    pc = len(instructions) * 4
+                    self.pseudos[pc] = i.op
+                    print("found peudo '{}', pc = {}".format(i.op, pc))
+                for u in unravelled:
+                    instructions.append(u)
         self.instructions += instructions
 
     def imm2int(self, arg):
@@ -309,12 +410,28 @@ class RiscvAssembler():
             offset = self.labels[arg] - self.pc
             # print("label offset = {}".format(offset))
             return offset
+        if arg.startswith("LABELREF"):
+            print("  found labelref")
+            l = LabelRef.fromString(arg)
+            if l.op == "CALL":
+                offset = self.imm2int(l.arg)
+                print("    resolving label {} -> {}".format(l.arg, offset))
+                # print("offset = {}".format(offset))
+                if l.name == "OFFSET":
+                    return offset
+                if l.name == "OFFSET12":
+                    return (offset + 4) & 0xfff
+            elif (l.op in ["J", "BEQZ", "BNEZ", "BGT"]):
+                if l.name == "IMM":
+                    imm = self.imm2int(l.arg)
+                    print("    resolving label {} -> {}".format(l.arg, imm))
+                    return imm
         try:
             return int(arg)
         except ValueError as e:
-            if 'B' in arg.upper():
+            if 'B' in arg.upper()[1]:
                 return int(arg, 2)
-            elif 'X' in arg.upper():
+            elif 'X' in arg.upper()[1]:
                 return int(arg, 16)
             else:
                 raise ValueError("Can't parse arg {}".format(arg))
@@ -343,6 +460,7 @@ if __name__ == "__main__":
            jumps:
            JAL   x4, 255
            JALR  x5, x7,  start
+           JALR  x5, x7,  future
            branches:
            BEQ   x3, x4,  1
            BNE   x3, x4,  1
@@ -350,6 +468,7 @@ if __name__ == "__main__":
            BGE   x3, x4,  1
            BLTU  x3, x4,  1
            BGEU  x3, x4,  1
+           future:
            luiandauipc:
            lui: LUI   x5,  0x30000
            AUIPC x5,  0x30000
@@ -364,6 +483,26 @@ if __name__ == "__main__":
            SB    x7, x10, 1
            SH    x7, x10, 2
            SW    x7, x10, 3
+           before_li:
+           LI    x3, 400
+           after_li:
+           LI    a1, 0
+           LI    a2, 128
+           LI    a3, 4000
+           LI    a4, 0x2000
+           test_other_pseudos:
+           CALL  load
+           CALL  futurelabel
+           RET
+           test_mv:
+           MV    x2, x3
+           NOP
+           J     after_li
+           BEQZ  a2, store
+           BNEZ  a1, store
+           BGT   a3, a2, store
+           futurelabel:
+           NOP
            EBREAK
     """)
     print(a.instructions)

@@ -11,6 +11,7 @@ class Top(Elaboratable):
         print("step = {}".format(step))
         self.leds = leds
 
+        # TODO: this is messy and should be done with iterating over dirs
         if step == 1:
             path = "01_blink"
         elif step == 2:
@@ -37,6 +38,8 @@ class Top(Elaboratable):
             path = "12_size_optimisation"
         elif step == 13:
             path = "13_subroutines"
+        elif step == 14:
+            path = "14_subroutines_v2"
         else:
             print("Invalid step_number {}.".format(step))
             exit(1)

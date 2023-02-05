@@ -7,22 +7,22 @@ class Memory(Elaboratable):
         a = RiscvAssembler()
 
         a.read("""begin:
-        ADD x10, x0, x0
+        LI  a0, 0
 
         l0:
-        ADDI x10, x10, 1
-        JAL x1, wait
-        JAL zero, l0
+        ADDI a0, a0, 1
+        CALL wait
+        J    l0
         EBREAK
 
         wait:
-        ADDI x11, x0, 1
-        SLLI x11, x11, 20
+        LI   a1, 1
+        SLLI a1, a1, 20
 
         l1:
-        ADDI x11, x11, -1
-        BNE x11, x0, l1
-        JALR x0, x1, 0
+        ADDI a1, a1, -1
+        BNEZ a1, l1
+        RET
         """)
 
         a.assemble()

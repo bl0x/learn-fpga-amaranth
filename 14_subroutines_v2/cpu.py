@@ -30,17 +30,29 @@ class CPU(Elaboratable):
         takeBranch = Signal(32)
 
         # Opcode decoder
-        isALUreg = (instr[0:7] == 0b0110011)
-        isALUimm = (instr[0:7] == 0b0010011)
-        isBranch = (instr[0:7] == 0b1100011)
-        isJALR =   (instr[0:7] == 0b1100111)
-        isJAL =    (instr[0:7] == 0b1101111)
-        isAUIPC =  (instr[0:7] == 0b0010111)
-        isLUI =    (instr[0:7] == 0b0110111)
-        isLoad =   (instr[0:7] == 0b0000011)
-        isStore =  (instr[0:7] == 0b0100011)
+        # It is nice to have these as actual signals for simulation
+        isALUreg = Signal()
+        isALUimm = Signal()
+        isBranch = Signal()
+        isJALR   = Signal()
+        isJAL    = Signal()
+        isAUIPC  = Signal()
+        isLUI    = Signal()
+        isLoad   = Signal()
+        isStore  = Signal()
         isSystem = Signal()
-        m.d.comb += isSystem.eq((instr[0:7] == 0b1110011))
+        m.d.comb += [
+            isALUreg.eq(instr[0:7] == 0b0110011),
+            isALUimm.eq(instr[0:7] == 0b0010011),
+            isBranch.eq(instr[0:7] == 0b1100011),
+            isJALR.eq(instr[0:7] == 0b1100111),
+            isJAL.eq(instr[0:7] == 0b1101111),
+            isAUIPC.eq(instr[0:7] == 0b0010111),
+            isLUI.eq(instr[0:7] == 0b0110111),
+            isLoad.eq(instr[0:7] == 0b0000011),
+            isStore.eq(instr[0:7] == 0b0100011),
+            isSystem.eq(instr[0:7] == 0b1110011)
+        ]
         self.isALUreg = isALUreg
         self.isALUimm = isALUimm
         self.isBranch = isBranch
@@ -76,15 +88,25 @@ class CPU(Elaboratable):
         self.funct3 = funct3
 
         # ALU
-        aluIn1 = rs1
-        aluIn2 = Mux((isALUreg | isBranch), rs2, Iimm)
-        shamt = Mux(isALUreg, rs2[0:5], instr[20:25])
+        aluIn1 = Signal.like(rs1)
+        aluIn2 = Signal.like(rs2)
+        shamt = Signal(5)
+        aluMinus = Signal(33)
+        aluPlus = Signal.like(aluIn1)
+
+        m.d.comb += [
+            aluIn1.eq(rs1),
+            aluIn2.eq(Mux((isALUreg | isBranch), rs2, Iimm)),
+            shamt.eq(Mux(isALUreg, rs2[0:5], instr[20:25]))
+        ]
 
         # Wire memory address to pc
         m.d.comb += self.mem_addr.eq(pc)
 
-        aluMinus = Cat(~aluIn1, C(0,1)) + Cat(aluIn2, C(0,1)) + 1
-        aluPlus = aluIn1 + aluIn2
+        m.d.comb += [
+            aluMinus.eq(Cat(~aluIn1, C(0,1)) + Cat(aluIn2, C(0,1)) + 1),
+            aluPlus.eq(aluIn1 + aluIn2)
+        ]
 
         EQ = aluMinus[0:32] == 0
         LTU = aluMinus[32]
