@@ -172,6 +172,9 @@ def reg2int(arg):
         return abi_names[arg.lower()]
     if arg[0].upper() == "X":
         return int(arg[1:])
+    else:
+        print("Unknown register '{}'".format(arg))
+        exit(-1)
 
 class RiscvAssembler():
     def __init__(self):
