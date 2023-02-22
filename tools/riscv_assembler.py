@@ -217,7 +217,7 @@ class RiscvAssembler():
     def encodeS(self, imm, rs2, rs1, f3, op):
         imm25 = (imm >> 5) & 0x7f
         imm7  = imm & 0x1f
-        return ((imm25 << 25) | (rs1 << 20) | (rs2 << 15)
+        return ((imm25 << 25) | (rs2 << 20) | (rs1 << 15)
                 | (f3 << 12) | (imm7 << 7) | op)
 
     def encodeRops(self, instruction):
@@ -268,6 +268,7 @@ class RiscvAssembler():
         return self.encodeI(imm, rs, f3, rd, 0b0000011)
 
     def encodeSops(self, instruction):
+        # Swapped rs2, rs1 to match assembly code
         rs2, rs1 = reg2int(instruction.args[0]), reg2int(instruction.args[1])
         imm = self.imm2int(instruction.args[2])
         _, f3 = [x for x in SInstructions if x[0] == instruction.op][0]
