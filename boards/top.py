@@ -3,13 +3,14 @@ from amaranth import *
 import sys
 
 class Top(Elaboratable):
-    def __init__(self, leds):
+    def __init__(self, leds, uart):
         if len(sys.argv) == 1:
             print("Usage: {} step_number".format(sys.argv[0]))
             exit(1)
         step = int(sys.argv[1])
         print("step = {}".format(step))
         self.leds = leds
+        self.uart = uart
 
         # TODO: this is messy and should be done with iterating over dirs
         if step == 1:
@@ -57,6 +58,7 @@ class Top(Elaboratable):
         m = Module()
         soc = self.soc
         leds = self.leds
+        uart = self.uart
         m.submodules.soc = soc
 
         # We connect the SOC leds signal to the various LEDs on the board.
@@ -66,6 +68,7 @@ class Top(Elaboratable):
             leds[2].o.eq(soc.leds[2]),
             leds[3].o.eq(soc.leds[3]),
             leds[4].o.eq(soc.leds[4]),
+            uart.tx.eq(soc.tx)
         ]
 
         return m
