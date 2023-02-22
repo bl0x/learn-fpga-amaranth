@@ -4,12 +4,14 @@ from amaranth import *
 from clockworks import Clockworks
 from memory import Memory
 from cpu import CPU
+from uart_tx import UartTx
 
 class SOC(Elaboratable):
 
     def __init__(self):
 
         self.leds = Signal(5)
+        self.tx = Signal()
 
         # Signals in this list can easily be plotted as vcd traces
         self.ports = []
@@ -20,20 +22,31 @@ class SOC(Elaboratable):
         cw = Clockworks()
         memory = DomainRenamer("slow")(Memory())
         cpu = DomainRenamer("slow")(CPU())
+        uart_tx = DomainRenamer("slow")(
+                UartTx(freq_hz=12*1000000, baud_rate=1000000))
+
         m.submodules.cw = cw
         m.submodules.cpu = cpu
         m.submodules.memory = memory
+        m.submodules.uart_tx = uart_tx
 
         self.cpu = cpu
         self.memory = memory
 
-        x10 = Signal(32)
-
+        ram_rdata = Signal(32)
+        mem_wordaddr = Signal(30)
         isIO = Signal()
         isRAM = Signal()
         mem_wstrb = Signal()
+        io_rdata = Signal(32)
+
+        # Memory map bits
+        IO_LEDS_bit = 0
+        IO_UART_DAT_bit = 1
+        IO_UART_CNTL_bit = 2
 
         m.d.comb += [
+            mem_wordaddr.eq(cpu.mem_addr[2:32]),
             isIO.eq(cpu.mem_addr[22]),
             isRAM.eq(~isIO),
             mem_wstrb.eq(cpu.mem_wmask.any())
@@ -45,19 +58,36 @@ class SOC(Elaboratable):
             memory.mem_rstrb.eq(isRAM & cpu.mem_rstrb),
             memory.mem_wdata.eq(cpu.mem_wdata),
             memory.mem_wmask.eq(Repl(isRAM, 4) & cpu.mem_wmask),
-            cpu.mem_rdata.eq(memory.mem_rdata)
+            ram_rdata.eq(memory.mem_rdata),
+            cpu.mem_rdata.eq(Mux(isRAM, ram_rdata, io_rdata))
         ]
 
-        # Memory map
-        IO_LEDS_bit = 0
-        IO_UART_DAT_bit = 1
-        IO_UART_CNTL_bit = 2
+        # LEDs
+        with m.If(isIO & mem_wstrb & mem_wordaddr[IO_LEDS_bit]):
+            m.d.sync += self.leds.eq(cpu.mem_wdata)
 
-        # CPU debug output
+        # UART
+        uart_valid = Signal()
+        uart_ready = Signal()
+
         m.d.comb += [
-            x10.eq(cpu.x10),
-            self.leds.eq(x10[0:5])
+            uart_valid.eq(isIO & mem_wstrb & mem_wordaddr[IO_UART_DAT_bit])
         ]
+
+        # Hook up UART
+        m.d.comb += [
+            uart_tx.valid.eq(uart_valid),
+            uart_tx.data.eq(cpu.mem_wdata[0:8]),
+            uart_ready.eq(uart_tx.ready),
+            self.tx.eq(uart_tx.tx)
+        ]
+
+        # Data from UART
+        m.d.comb += [
+            io_rdata.eq(Mux(mem_wordaddr[IO_UART_CNTL_bit],
+                Cat(C(0, 9), ~uart_ready, C(0, 22)), C(0, 32)))
+        ]
+
 
         # Export signals for simulation
         def export(signal, name):

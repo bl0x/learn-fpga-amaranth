@@ -41,35 +41,28 @@ class Memory(Elaboratable):
 
         wait:
         LI t0, 1
-        SLLI t0, t0, 5
+        SLLI t0, t0, 3
 
-        wait_l0:
+        wait_loop:
         ADDI t0, t0, -1
-        BNEZ t0, wait_l0
+        BNEZ t0, wait_loop
         RET
 
         putc:
         SW a0, gp, 8
         LI t0, 0x200
-        putc_l0:
+        putc_loop:
         LW t1, gp, 0x10
         AND t1, t1, t0
-        BNEZ t1, putc_l0
+        BNEZ t1, putc_loop
         RET
         """)
 
         a.assemble()
         self.instructions = a.mem
 
-        # Add some data at offset 400 / word 100
-        while len(self.instructions) < 100:
-            self.instructions.append(0)
-        self.instructions.append(0x04030201)
-        self.instructions.append(0x08070605)
-        self.instructions.append(0x0c0b0a09)
-        self.instructions.append(0xff0f0e0d)
         # Add 0 memory up to offset 1024 / word 256
-        while len(self.instructions) < 256:
+        while len(self.instructions) < (1024 * 6 / 4):
             self.instructions.append(0)
 
         print("memory = {}".format(self.instructions))
