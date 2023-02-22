@@ -379,7 +379,7 @@ class RiscvAssembler():
         if ' ' not in line:
             return Instruction(line)
         else:
-            op, rest = [x.strip().upper() for x in (
+            op, rest = [x.strip() for x in (
                 line.split(' ', maxsplit=1))]
             # print("op = {}, rest = {}".format(op, rest))
             items = [x.strip() for x in rest.split(',')]
@@ -407,15 +407,16 @@ class RiscvAssembler():
         self.instructions += instructions
 
     def imm2int(self, arg):
+        upp = arg.upper()
         if len(arg) == 0:
             return None
-        if arg in self.labels:
-            offset = self.labels[arg] - self.pc
+        if upp in self.labels:
+            offset = self.labels[upp] - self.pc
             # print("label offset = {}".format(offset))
             return offset
-        if arg.startswith("LABELREF"):
+        if upp.startswith("LABELREF"):
             print("  found labelref")
-            l = LabelRef.fromString(arg)
+            l = LabelRef.fromString(upp)
             if l.op == "CALL":
                 offset = self.imm2int(l.arg)
                 print("    resolving label {} -> {}".format(l.arg, offset))
@@ -429,12 +430,23 @@ class RiscvAssembler():
                     imm = self.imm2int(l.arg)
                     print("    resolving label {} -> {}".format(l.arg, imm))
                     return imm
+        if arg.startswith('"'):
+            if arg.endswith('"'):
+                if len(arg) == 3:
+                    try:
+                        return ord(arg[1])
+                    except:
+                        raise ValueError("Expected char, but got {}".format(arg))
+                else:
+                    raise ValueError("Expected quoted char, but got {}".format(arg))
+            else:
+                raise ValueError("Strange argument: {}".format(arg))
         try:
             return int(arg)
         except ValueError as e:
-            if 'B' in arg.upper()[1]:
+            if 'B' in upp[1]:
                 return int(arg, 2)
-            elif 'X' in arg.upper()[1]:
+            elif 'X' in upp[1]:
                 return int(arg, 16)
             else:
                 raise ValueError("Can't parse arg {}".format(arg))

@@ -44,6 +44,8 @@ class Top(Elaboratable):
             path = "15_load"
         elif step == 16:
             path = "16_store"
+        elif step == 17:
+            path = "17_memory_map"
         else:
             print("Invalid step_number {}.".format(step))
             exit(1)
