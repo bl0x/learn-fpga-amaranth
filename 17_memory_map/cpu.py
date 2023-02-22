@@ -196,7 +196,7 @@ class CPU(Elaboratable):
                     m.d.sync += pc.eq(nextPc)
                 with m.If(isLoad):
                     m.next = "LOAD"
-                with m.If(isStore):
+                with m.Elif(isStore):
                     m.next = "STORE"
                 with m.Else():
                     m.next = "FETCH_INSTR"
