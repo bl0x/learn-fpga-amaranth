@@ -300,7 +300,7 @@ class RiscvAssembler():
                 instr.append(self.iFromLine("ADDI {}, zero, {}".format(
                     rd, imm)))
             else:
-                imm2 = hex(imm + ((imm & 0x800) << 12))
+                imm2 = hex(imm + ((imm & 0x800) << 1))
                 imm12 = hex(imm & 0xfff)
                 instr.append(self.iFromLine("LUI {}, {}".format(rd, imm2)))
                 if imm12 != 0:
