@@ -2,7 +2,7 @@ import sys
 from amaranth import *
 
 from clockworks import Clockworks
-from memory import Memory
+from memory import Mem
 from cpu import CPU
 from uart_tx import UartTx
 
@@ -20,7 +20,7 @@ class SOC(Elaboratable):
 
         m = Module()
         cw = Clockworks()
-        memory = DomainRenamer("slow")(Memory())
+        memory = DomainRenamer("slow")(Mem())
         cpu = DomainRenamer("slow")(CPU())
         uart_tx = DomainRenamer("slow")(
                 UartTx(freq_hz=12*1000000, baud_rate=1000000))

@@ -1,7 +1,7 @@
 from amaranth import *
 from riscv_assembler import RiscvAssembler
 
-class Memory(Elaboratable):
+class Mem(Elaboratable):
 
     def __init__(self):
         a = RiscvAssembler()
@@ -41,7 +41,7 @@ class Memory(Elaboratable):
 
         wait:
         LI t0, 1
-        SLLI t0, t0, 20
+        SLLI t0, t0, 3
 
         wait_loop:
         ADDI t0, t0, -1
@@ -68,8 +68,8 @@ class Memory(Elaboratable):
         print("memory = {}".format(self.instructions))
 
         # Instruction memory initialised with above instructions
-        self.mem = Array([Signal(32, reset=x, name="mem{}".format(i))
-                          for i,x in enumerate(self.instructions)])
+        self.mem = Memory(width=32, depth=len(self.instructions),
+                          init=self.instructions, name="mem")
 
         self.mem_addr = Signal(32)
         self.mem_rdata = Signal(32)
@@ -80,17 +80,27 @@ class Memory(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
+        w_port = m.submodules.w_port = self.mem.write_port(
+            domain="sync", granularity=8
+        )
+        r_port = m.submodules.r_port = self.mem.read_port(
+            domain="sync", transparent=False
+        )
+
         word_addr = self.mem_addr[2:32]
 
-        with m.If(self.mem_rstrb):
-            m.d.sync += self.mem_rdata.eq(self.mem[word_addr])
-        with m.If(self.mem_wmask[0]):
-            m.d.sync += self.mem[word_addr][0:8].eq(self.mem_wdata[0:8])
-        with m.If(self.mem_wmask[1]):
-            m.d.sync += self.mem[word_addr][8:16].eq(self.mem_wdata[8:16])
-        with m.If(self.mem_wmask[2]):
-            m.d.sync += self.mem[word_addr][16:24].eq(self.mem_wdata[16:24])
-        with m.If(self.mem_wmask[3]):
-            m.d.sync += self.mem[word_addr][24:32].eq(self.mem_wdata[24:32])
+        # Hook up read port
+        m.d.comb += [
+            r_port.addr.eq(word_addr),
+            r_port.en.eq(self.mem_rstrb),
+            self.mem_rdata.eq(r_port.data)
+        ]
+
+        # Hook up write port
+        m.d.comb += [
+            w_port.addr.eq(word_addr),
+            w_port.en.eq(self.mem_wmask),
+            w_port.data.eq(self.mem_wdata)
+        ]
 
         return m
