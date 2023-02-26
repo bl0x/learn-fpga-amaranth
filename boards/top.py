@@ -68,7 +68,12 @@ class Top(Elaboratable):
             leds[2].o.eq(soc.leds[2]),
             leds[3].o.eq(soc.leds[3]),
             leds[4].o.eq(soc.leds[4]),
-            uart.tx.eq(soc.tx)
         ]
+
+        # The TX port is added only later to the SOC
+        if hasattr(soc, "tx"):
+            m.d.comb += [
+                uart.tx.eq(soc.tx)
+            ]
 
         return m
