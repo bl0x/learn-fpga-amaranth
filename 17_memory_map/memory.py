@@ -80,6 +80,9 @@ class Mem(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
+        # Using the memory module from amaranth library,
+        # we can use write_port and read_port to easily instantiate
+        # platform specific primitives to access memory efficiently.
         w_port = m.submodules.w_port = self.mem.write_port(
             domain="sync", granularity=8
         )
