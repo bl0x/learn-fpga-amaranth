@@ -41,7 +41,7 @@ class Mem(Elaboratable):
 
         wait:
         LI t0, 1
-        SLLI t0, t0, 20
+        SLLI t0, t0, 18
 
         wait_loop:
         ADDI t0, t0, -1

@@ -15,6 +15,7 @@ Support for the following boards is included:
 
 * Digilent Arty A7
 * Digilent CMOD A7
+* Digilent CMOD S7 (untested)
 
 If you don't have a board, you can still run the code in the Amaranth Python simulator.
 
@@ -51,6 +52,11 @@ python boards/digilent_arty_a7.py 5
 ### RISC-V assembler
 
 This repository also contains a (minimal) RISC-V assembler written in Python in the `tools` directory.
+
+
+### UART connection
+
+Due to deviation of the internal oscillator frequency from the nominal value it is possible that the UART baudrate is not exactly the same as what is set in the code (by default 1 MBaud). In this case it helps to vary the receiver baudrate by +- 20% and check if reception works. If an oscilloscope is available, you can also measure the clock frequency by patching out the clock signal to one of the pins and measuring the signal period.
 
 
 ### Licensing
