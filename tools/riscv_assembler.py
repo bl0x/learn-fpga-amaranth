@@ -507,6 +507,31 @@ class RiscvAssembler():
            ADDI  x1, x1,  1
            LW    x2, x1,  0
            SW    x2, x1,  0
+           test_sub:
+           LI   a0, 100
+           LI   a1, 50
+           SUB  a2, a0, a1  ; 50
+           LI   a0, 50
+           LI   a1, 100     ; -50
+           SUB  a3, a0, a1
+           LI   a0, -50
+           LI   a1, 100
+           SUB  a4, a0, a1  ; -150
+           LI   a0, 50
+           LI   a1, -100
+           SUB  a5, a0, a1  ; 150
+           LI   a0, -50
+           LI   a1, -100
+           SUB  a6, a0, a1
+           LI   a0, -100
+           LI   a1, 50
+           SUB  a7, a0, a1
+           LI   a0, 100
+           LI   a1, -50
+           SUB  s2, a0, a1
+           LI   a0, -100
+           LI   a1, -50
+           SUB  s3, a0, a1
            test_shift:
            LI   a1, 100
            SLLI a2, a1, 2
