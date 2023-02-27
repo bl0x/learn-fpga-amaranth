@@ -520,6 +520,8 @@ class RiscvAssembler():
 
     def testCode(self):
         return """begin:
+            slow_bit equ 3
+
            step4:
            ADD   x0, x0, x0
            ADD   x1, x0, x0
@@ -555,6 +557,7 @@ class RiscvAssembler():
            LI   a1, -50
            SUB  s3, a0, a1
            ; TRACE a0, a1, s3 ; does not work yet
+           CALL wait
            test_shift:
            LI   a1, 100
            SLLI a2, a1, 2
@@ -564,6 +567,7 @@ class RiscvAssembler():
            SLLI a5, a1, 2
            SRLI a6, a1, 2
            SRAI a7, a1, 2
+           CALL wait
            test_mul:
            LI   a0, 5120
            LI   a1, 5120
@@ -577,6 +581,25 @@ class RiscvAssembler():
            CALL mulsi3
            SRAI a2, a0, 10
            NOP
+           CALL wait
+           test_gt:
+           LI   a0, 32
+           LI   a1, 64
+           BGT  a1, a0, gt_ok
+           LI   a0, 0xdead
+           LI   a1, 0xdead
+           gt_ok:
+           NOP
+           CALL wait
+           test_lt:
+           LI   a0, 64
+           LI   a1, 32
+           BLT  a1, a0, lt_ok
+           LI   a0, 0xdead
+           LI   a1, 0xdead
+           lt_ok:
+           NOP
+           CALL wait
            start:
            EBREAK
            ADD x3, x2, x1
@@ -644,6 +667,14 @@ class RiscvAssembler():
             SRLI    a1, a1, 1
             SLLI    a2, a2, 1
             BNEZ    a1, mulsi3_l0
+            RET
+
+            wait:
+            LI      t0, 1
+            SLLI    t0, t0, slow_bit
+            wait_loop:
+            ADDI    t0, t0, -1
+            BNEZ    t0, wait_loop
             RET
 
     """
