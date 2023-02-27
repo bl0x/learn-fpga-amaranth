@@ -52,7 +52,7 @@ class Mem(Elaboratable):
 
         loop_y:
         LI      s0, 0
-        LI      s2, ymin
+        LI      s2, ymin ; (bug in LI?)
 
         loop_x:
         MV      s4, s2                  ; z <- c

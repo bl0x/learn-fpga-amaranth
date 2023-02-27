@@ -496,10 +496,8 @@ class RiscvAssembler():
             else:
                 raise ValueError("Can't parse arg {}".format(arg))
 
-
-if __name__ == "__main__":
-    a = RiscvAssembler()
-    a.read("""begin:
+    def testCode(self):
+        return """begin:
            step4:
            ADD   x0, x0, x0
            ADD   x1, x0, x0
@@ -509,6 +507,15 @@ if __name__ == "__main__":
            ADDI  x1, x1,  1
            LW    x2, x1,  0
            SW    x2, x1,  0
+           test_shift:
+           LI   a1, 100
+           SLLI a2, a1, 2
+           SRLI a3, a1, 2
+           SRAI a4, a1, 2
+           LI   a1, -100
+           SLLI a5, a1, 2
+           SRLI a6, a1, 2
+           SRAI a7, a1, 2
            EBREAK
            start:
            ADD x3, x2, x1
@@ -564,6 +571,10 @@ if __name__ == "__main__":
            futurelabel:
            NOP
            EBREAK
-    """)
+    """
+
+if __name__ == "__main__":
+    a = RiscvAssembler()
+    a.read(a.testCode())
     print(a.instructions)
     a.assemble()
