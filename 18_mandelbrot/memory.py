@@ -20,18 +20,19 @@ class Mem(Elaboratable):
         norm_max        equ 4096    ; (4 << mandel_shift)
         io_leds         equ 4       ; (2 + 2)
         slow_bit        equ 18      ; wait (1 << 18) clocks
+        ; slow_bit        equ 1      ; wait (1 << 18) clocks
 
         LI      sp, 0x1800          ; end of RAM, 6 kB
         LI      gp, 0x400000        ; IO page
 
         J       mandelstart
 
-        colormap:
+        colormap:                   ; colormap data
         DATAB   " ", ".", ",", ":"
         DATAB   ";", "o", "x", "%"
         DATAB   "#", "@", 0, 0
 
-        mandelstart:
+        mandelstart:                ; main entry point
 
         LI      s0, 5               ; blink 5 times
         blink:
