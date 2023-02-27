@@ -70,7 +70,7 @@ class Mem(Elaboratable):
         MV      a0, s4
         MV      a1, s5
         CALL    mulsi3
-        SRLI    s7, a0, mandel_shift_m1 ; Zri <- (Zr*Zi) >> (mandelshift-1)
+        SRAI    s7, a0, mandel_shift_m1 ; Zri <- (Zr*Zi) >> (mandelshift-1)
         MV      a0, s5
         MV      a1, s5
         CALL    mulsi3

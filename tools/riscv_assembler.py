@@ -532,6 +532,7 @@ class RiscvAssembler():
            LI   a0, -100
            LI   a1, -50
            SUB  s3, a0, a1
+           TRACE a0, a1, s3
            test_shift:
            LI   a1, 100
            SLLI a2, a1, 2
