@@ -98,6 +98,12 @@ PseudoInstructions = [
 ]
 PseudoOps = [x[0] for x in PseudoInstructions]
 
+MemInstructions = [
+    ("DATAW",),
+    ("DATAB",),
+]
+MemOps = [x[0] for x in MemInstructions]
+
 class LabelRef():
     def __init__(self, op, name, arg):
         self.op = op
@@ -288,6 +294,18 @@ class RiscvAssembler():
         else:
             print("Unhandled system op {}".format(op))
 
+    def encodeMemops(self, instruction):
+        op = instruction.op
+        if op == "DATAW":
+            w = int(instruction.args[0])
+            return w
+        if op == "DATAB":
+            b1 = int(instruction.args[0]) & 0xff
+            b2 = int(instruction.args[1]) & 0xff
+            b3 = int(instruction.args[2]) & 0xff
+            b4 = int(instruction.args[3]) & 0xff
+            return (b4 << 24) | (b3 << 16) | (b2 << 8) | b1
+
     def unravelPseudoOps(self, instruction):
         op = instruction.op
         instr = []
@@ -360,6 +378,8 @@ class RiscvAssembler():
             encoded = self.encodeSops(instruction)
         elif instruction.op in SysOps:
             encoded = self.encodeSysops(instruction)
+        elif instruction.op in MemOps:
+            encoded = self.encodeMemops(instruction)
         else:
             print("Unhandled instruction / opcode {}".format(instruction))
             exit(1)
@@ -392,6 +412,14 @@ class RiscvAssembler():
         for line in text.splitlines():
             line = line.strip()
             i = None
+            # Quoted characters
+            if '"' in line:
+                n = line.count('"')
+                if n%2 != 0:
+                    print("Not an even number of quotes. Check code.")
+                    exit(1)
+                # Replace double-quoted characters with their ascii value
+                line = re.sub('"(.)"', lambda m: str(ord(m.group(1))), line)
             # Strip comments
             if ';' in line:
                 line = line.split(';', maxsplit=1)[0]
