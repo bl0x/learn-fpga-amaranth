@@ -104,6 +104,11 @@ MemInstructions = [
 ]
 MemOps = [x[0] for x in MemInstructions]
 
+DebugInstructions = [
+    ("TRACE",),
+]
+DebugOps = [x[0] for x in DebugInstructions]
+
 class LabelRef():
     def __init__(self, op, name, arg):
         self.op = op
@@ -183,13 +188,17 @@ def reg2int(arg):
         exit(-1)
 
 class RiscvAssembler():
-    def __init__(self):
+    def __init__(self, simulation = False):
         self.pc = 0
         self.labels = {}
         self.constants = {}
         self.pseudos = {}
         self.instructions = []
         self.mem = []
+        self.debug_args = []
+        self.simulation = simulation
+
+        print("Simulation = ", "OFF" if simulation==False else "ON")
 
     def assemble(self):
         for inst in self.instructions:
@@ -306,6 +315,13 @@ class RiscvAssembler():
             b4 = int(instruction.args[3]) & 0xff
             return (b4 << 24) | (b3 << 16) | (b2 << 8) | b1
 
+    def encodeDebugops(self, instruction):
+        op = instruction.op
+        self.debug_args.append(instruction.args)
+        index = len(self.debug_args) - 1
+        if op == "TRACE":
+            return (index << 24) | 0b11110011
+
     def unravelPseudoOps(self, instruction):
         op = instruction.op
         instr = []
@@ -380,6 +396,8 @@ class RiscvAssembler():
             encoded = self.encodeSysops(instruction)
         elif instruction.op in MemOps:
             encoded = self.encodeMemops(instruction)
+        elif instruction.op in DebugOps:
+            encoded = self.encodeDebugops(instruction)
         else:
             print("Unhandled instruction / opcode {}".format(instruction))
             exit(1)
@@ -413,6 +431,9 @@ class RiscvAssembler():
             line = line.strip()
             i = None
             # Quoted characters
+            if "TRACE" in line:
+                if self.simulation == False:
+                    continue
             if '"' in line:
                 n = line.count('"')
                 if n%2 != 0:
@@ -491,8 +512,9 @@ class RiscvAssembler():
         except ValueError as e:
             if 'B' in upp[1]:
                 return int(arg, 2)
-            elif 'X' in upp[1]:
-                return int(arg, 16)
+            elif 'X' in upp:
+                if "0X" == upp[0:2] or "-0X" == upp[0:3]:
+                    return int(arg, 16)
             else:
                 raise ValueError("Can't parse arg {}".format(arg))
 
@@ -532,7 +554,7 @@ class RiscvAssembler():
            LI   a0, -100
            LI   a1, -50
            SUB  s3, a0, a1
-           TRACE a0, a1, s3
+           ; TRACE a0, a1, s3 ; does not work yet
            test_shift:
            LI   a1, 100
            SLLI a2, a1, 2
@@ -542,8 +564,21 @@ class RiscvAssembler():
            SLLI a5, a1, 2
            SRLI a6, a1, 2
            SRAI a7, a1, 2
-           EBREAK
+           test_mul:
+           LI   a0, 5120
+           LI   a1, 5120
+           LI   a4, 25600
+           CALL mulsi3
+           SRLI a2, a0, 10
+           NOP
+           LI   a0, -5120
+           LI   a1, 5120
+           LI   a4, -25600
+           CALL mulsi3
+           SRAI a2, a0, 10
+           NOP
            start:
+           EBREAK
            ADD x3, x2, x1
            ADDI  x1, x0,  4
            ADDI  ra, zero,  4
@@ -597,10 +632,24 @@ class RiscvAssembler():
            futurelabel:
            NOP
            EBREAK
+
+            mulsi3:                 ; integer multiplication
+            MV      a2, a0
+            LI      a0, 0
+            mulsi3_l0:
+            ANDI    a3, a1, 1
+            BEQZ    a3, mulsi3_l1
+            ADD     a0, a0, a2
+            mulsi3_l1:
+            SRLI    a1, a1, 1
+            SLLI    a2, a2, 1
+            BNEZ    a1, mulsi3_l0
+            RET
+
     """
 
 if __name__ == "__main__":
-    a = RiscvAssembler()
+    a = RiscvAssembler(simulation=True)
     a.read(a.testCode())
     print(a.instructions)
     a.assemble()
