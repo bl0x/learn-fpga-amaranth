@@ -81,10 +81,7 @@ class Mem(Elaboratable):
 
         ADD     s6, s6, s8              ; Exit, if norm > norm_max
         LI      s7, norm_max
-
-        NOP
-
-        BLT     s6, s7, exit_z ; (BUG in BGT), was BGT!!
+        BGT     s6, s7, exit_z
 
         ADDI    s10, s10, -1            ; iter--
         BNEZ    s10, loop_z

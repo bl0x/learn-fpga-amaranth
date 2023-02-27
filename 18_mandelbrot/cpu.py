@@ -115,7 +115,7 @@ class CPU(Elaboratable):
         ]
 
         m.d.comb += [
-            aluMinus.eq(Cat(~aluIn2, C(0,1)) + Cat(aluIn1, C(0,1)) + 1),
+            aluMinus.eq(Cat(~aluIn2, C(1,1)) + Cat(aluIn1, C(0,1)) + 1),
             aluPlus.eq(aluIn1 + aluIn2)
         ]
 
