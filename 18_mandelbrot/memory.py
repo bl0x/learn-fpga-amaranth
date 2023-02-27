@@ -66,22 +66,25 @@ class Mem(Elaboratable):
         MV      a0, s4
         MV      a1, s4
         CALL    mulsi3
-        SRLI    s6, a0, mandel_shift    ; Zrr <- (Zr*Zr) >> mandel_shift
+        SRLI    s6, a0, mandel_shift    ; s6=Zrr <- (Zr*Zr) >> mandel_shift
         MV      a0, s4
         MV      a1, s5
         CALL    mulsi3
-        SRAI    s7, a0, mandel_shift_m1 ; Zri <- (Zr*Zi) >> (mandelshift-1)
+        SRAI    s7, a0, mandel_shift_m1 ; s7=Zri <- (Zr*Zi) >> (mandelshift-1)
         MV      a0, s5
         MV      a1, s5
         CALL    mulsi3
-        SRLI    s8, a0, mandel_shift    ; Zii <- (Zi*Zi) >> mandelshift
-        SUB     s4, s6, s8              ; Zr <- Zrr - Zii + Cr
+        SRLI    s8, a0, mandel_shift    ; s8=Zii <- (Zi*Zi) >> mandelshift
+        SUB     s4, s6, s8              ; s4=Zr <- Zrr - Zii + Cr
         ADD     s4, s4, s2
-        ADD     s5, s7, s3              ; Zi <- 2*Zri + cr
+        ADD     s5, s7, s3              ; s5=Zi <- 2*Zri + cr
 
         ADD     s6, s6, s8              ; Exit, if norm > norm_max
         LI      s7, norm_max
-        BGT     s6, s7, exit_z
+
+        NOP
+
+        BLT     s6, s7, exit_z ; (BUG in BGT), was BGT!!
 
         ADDI    s10, s10, -1            ; iter--
         BNEZ    s10, loop_z

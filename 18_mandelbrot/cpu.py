@@ -27,6 +27,7 @@ class CPU(Elaboratable):
 
         # Register bank
         regs = Array([Signal(32, name="x"+str(x)) for x in range(32)])
+        self.regs = regs
         rs1 = Signal(32)
         rs2 = Signal(32)
 
