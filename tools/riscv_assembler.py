@@ -180,6 +180,7 @@ class RiscvAssembler():
     def __init__(self):
         self.pc = 0
         self.labels = {}
+        self.constants = {}
         self.pseudos = {}
         self.instructions = []
         self.mem = []
@@ -391,6 +392,18 @@ class RiscvAssembler():
         for line in text.splitlines():
             line = line.strip()
             i = None
+            # Strip comments
+            if ';' in line:
+                line = line.split(';', maxsplit=1)[0]
+            # Constants
+            if 'equ' in line:
+                items = [x.strip() for x in line.split()]
+                name = items[0]
+                value = "".join(items[2:])
+                self.constants[name.upper()] = int(value)
+                print("found equ '{}', value = '{}'".format(name, value))
+                continue
+            # Labels
             if ':' in line:
                 label, line = [x.strip() for x in line.split(':', maxsplit=1)]
                 pc = len(instructions) * 4
@@ -411,6 +424,9 @@ class RiscvAssembler():
         upp = arg.upper()
         if len(arg) == 0:
             return None
+        if upp in self.constants:
+            value = self.constants[upp]
+            return value
         if upp in self.labels:
             offset = self.labels[upp] - self.pc
             # print("label offset = {}".format(offset))
