@@ -18,9 +18,11 @@ class SOC(Elaboratable):
 
     def elaborate(self, platform):
 
+        simulation = platform is None
+
         m = Module()
         cw = Clockworks()
-        memory = DomainRenamer("slow")(Mem())
+        memory = DomainRenamer("slow")(Mem(simulation=simulation))
         cpu = DomainRenamer("slow")(CPU())
         uart_tx = DomainRenamer("slow")(
                 UartTx(freq_hz=12*1000000, baud_rate=1000000))

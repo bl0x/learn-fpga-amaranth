@@ -30,6 +30,8 @@ class CPU(Elaboratable):
         rs1 = Signal(32)
         rs2 = Signal(32)
 
+        self.regs = regs
+
         # ALU registers
         aluOut = Signal(32)
         takeBranch = Signal(32)

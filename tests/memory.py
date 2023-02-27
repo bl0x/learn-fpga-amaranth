@@ -3,10 +3,13 @@ from riscv_assembler import RiscvAssembler
 
 class Mem(Elaboratable):
 
-    def __init__(self):
-        a = RiscvAssembler()
+    def __init__(self, simulation = False):
+        self.simulation = simulation
+
+        a = RiscvAssembler(simulation=simulation)
         a.read(a.testCode())
         a.assemble()
+
         self.instructions = a.mem
 
         print("memory = {}".format(self.instructions))
