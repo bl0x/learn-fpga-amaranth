@@ -2,3 +2,5 @@ build
 *.vcd
 *.gtkw
 __pycache__
+obj_dir
+bugs
