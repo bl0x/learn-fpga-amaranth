@@ -11,7 +11,7 @@ class Clockworks(Elaboratable):
         # slow clock signal as an output.
 
         self.slow = slow
-        if sim_slow == 0:
+        if sim_slow is None:
             self.sim_slow = slow
         else:
             self.sim_slow = sim_slow

@@ -52,7 +52,7 @@ class Top(Elaboratable):
         else:
             print("Invalid step_number {}.".format(step))
             exit(1)
-        sys.path.append(path)
+        sys.path = [path] + sys.path #give priority to projects, to avoid global "soc" packages
         from soc import SOC
         self.soc = SOC()
 
