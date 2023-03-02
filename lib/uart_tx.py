@@ -1,7 +1,13 @@
 from amaranth import *
 
-# This module is designed after corescore_emitter_uart from Olof Kindgren
-# https://gist.github.com/olofk/e91fba2572396f55525f8814f05fb33d
+# This module is designed after corescore_emitter_uart by Olof Kindgren which
+# is part of the corescore repository on github.
+#
+# https://github.com/olofk/corescore/blob/master/rtl/corescore_emitter_uart.v
+#
+# The original code is licensed under the Apache-2.0 license.
+# A copy of this license file is included in this repository in the LICENSES
+# directory.
 
 class UartTx(Elaboratable):
 

@@ -61,7 +61,9 @@ Due to deviation of the internal oscillator frequency from the nominal value it 
 
 ### Licensing
 
-See the LICENSE file in the repository.
+The files in this repository are licensed under the BSD-3-Clause license.
+Exceptions are marked in the respective files.
+See the files in the LICENSES directory for details.
 
 
 ### Author
