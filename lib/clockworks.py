@@ -24,8 +24,8 @@ class Clockworks(Elaboratable):
         if self.slow != 0:
             # When the design is simulated, platform is None
             if platform is None:
-                # Have the simulation run 256 times faster than the
-                # actual hardware
+                # Have the simulation run at a different speed than the
+                # actual hardware (usually faster).
                 slow_bit = self.sim_slow
             else:
                 slow_bit = self.slow

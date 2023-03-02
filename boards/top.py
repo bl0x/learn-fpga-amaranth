@@ -52,7 +52,10 @@ class Top(Elaboratable):
         else:
             print("Invalid step_number {}.".format(step))
             exit(1)
-        sys.path = [path] + sys.path #give priority to projects, to avoid global "soc" packages
+
+        # add project path to give priority to this project
+        # and avoid global including "soc" packages
+        sys.path = [path] + sys.path
         from soc import SOC
         self.soc = SOC()
 
