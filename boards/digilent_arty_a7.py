@@ -1,4 +1,5 @@
 from amaranth_boards.arty_a7 import *
+from amaranth.build import *
 
 from top import Top
 
