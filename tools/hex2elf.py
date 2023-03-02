@@ -11,19 +11,20 @@ class Elf32Header():
     def __init__(self, data):
         def get(data):
             return int.from_bytes(data, byteorder='little')
-        self.type = get(data[0:2])
-        self.machine = get(data[2:4])
-        self.version = get(data[4:8])
-        self.entry = get(data[8:12])
-        self.phoff = get(data[12:16])
-        self.shoff = get(data[16:20])
-        self.flags = get(data[20:24])
-        self.ehsize = get(data[24:26])
-        self.phentsize = get(data[26:28])
-        self.phnum = get(data[28:30])
-        self.shentsize = get(data[30:32])
-        self.shnum = get(data[32:34])
-        self.shstrndx = get(data[34:36])
+        self.ident = data[0:16]
+        self.type = get(data[16:18])
+        self.machine = get(data[18:20])
+        self.version = get(data[20:24])
+        self.entry = get(data[24:28])
+        self.phoff = get(data[28:32])
+        self.shoff = get(data[32:36])
+        self.flags = get(data[36:40])
+        self.ehsize = get(data[40:42])
+        self.phentsize = get(data[42:44])
+        self.phnum = get(data[44:46])
+        self.shentsize = get(data[46:48])
+        self.shnum = get(data[48:50])
+        self.shstrndx = get(data[50:52])
 
         if self.ehsize == 36:
             print("I'll fix it.")
