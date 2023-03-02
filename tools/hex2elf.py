@@ -26,8 +26,9 @@ class Elf32Header():
         self.shnum = get(data[48:50])
         self.shstrndx = get(data[50:52])
 
-        if self.ehsize == 36:
+        if self.ehsize != 52:
             print("I'll fix it.")
+
     def __str__(self):
         text = ""
         text += "type=     0x{:04x}\n".format(self.type)
