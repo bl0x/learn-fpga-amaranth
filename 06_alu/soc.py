@@ -107,11 +107,9 @@ class SOC(Elaboratable):
         # Immediate format decoder
         Uimm = (Cat(Repl(0, 12), instr[12:32]))
         Iimm = (Cat(instr[20:31], Repl(instr[31], 21)))
-        Simm = (Cat(instr[7:12], Cat(instr[25:31], Repl(instr[31], 21)))),
-        Bimm = (Cat(0, Cat(instr[8:12], Cat(instr[25:31], Cat(
-            instr[7], Repl(instr[31], 20))))))
-        Jimm = (Cat(0, Cat(instr[21:31], Cat(instr[20], Cat(
-            instr[12:20], Repl(instr[31], 12))))))
+        Simm = (Cat(instr[7:12], instr[25:31], Repl(instr[31], 21))),
+        Bimm = (Cat(0, instr[8:12], instr[25:31], instr[7], Repl(instr[31], 20)))
+        Jimm = (Cat(0, instr[21:31], instr[20], instr[12:20], Repl(instr[31], 12)))
 
         # Register addresses decoder
         rs1Id = (instr[15:20])
