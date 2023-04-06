@@ -18,12 +18,15 @@ class SOC(Elaboratable):
 
     def elaborate(self, platform):
 
+        clk_frequency = int(platform.default_clk_constraint.frequency)
+        print("clock frequency = {}".format(clk_frequency))
+
         m = Module()
         cw = Clockworks()
         memory = DomainRenamer("slow")(Mem())
         cpu = DomainRenamer("slow")(CPU())
         uart_tx = DomainRenamer("slow")(
-                UartTx(freq_hz=12*1000000, baud_rate=1000000))
+                UartTx(freq_hz=clk_frequency, baud_rate=1000000))
 
         m.submodules.cw = cw
         m.submodules.cpu = cpu
