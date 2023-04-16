@@ -16,6 +16,7 @@ Support for the following boards is included:
 * Digilent Arty A7
 * Digilent CMOD A7
 * Digilent CMOD S7 (untested)
+* Sipeed tang nano 9k
 
 If you don't have a board, you can still run the code in the Amaranth Python simulator.
 
@@ -26,6 +27,8 @@ Amaranth HDL supports the following toolchains for the boards:
 
 * AMD/Xilinx Vivado, proprietary
 * F4PGA (former Symbiflow), using FLOSS tools (Yosys, Nextpnr)
+* Gowin, proprietary
+* Project Apicula (for Gowin FPGAs)
 
 
 ### Running the simulation
@@ -58,6 +61,9 @@ This repository also contains a (minimal) RISC-V assembler written in Python in 
 
 Due to deviation of the internal oscillator frequency from the nominal value it is possible that the UART baudrate is not exactly the same as what is set in the code (by default 1 MBaud). In this case it helps to vary the receiver baudrate by +- 20% and check if reception works. If an oscilloscope is available, you can also measure the clock frequency by patching out the clock signal to one of the pins and measuring the signal period.
 
+#### Sipeed Tang Nano 9k
+
+The built-in UART-USB converter does not work very well (at least not on Linux). For this reason, it is better to connect an external UART-USB converter to the Pins 53 (rx) and 54 (tx). When testing the receiver had to be tuned to between 900 kBaud and 960 kBaud.
 
 ### Licensing
 
