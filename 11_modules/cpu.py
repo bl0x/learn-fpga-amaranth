@@ -48,13 +48,13 @@ class CPU(Elaboratable):
         self.isSystem = isSystem
 
         # Immediate format decoder
-        Uimm = Cat(Repl(0, 12), instr[12:32])
-        Iimm = Cat(instr[20:31], Repl(instr[31], 21))
-        Simm = Cat(instr[7:12], instr[25:31], Repl(instr[31], 21))
+        Uimm = Cat(Const(0).replicate(12), instr[12:32])
+        Iimm = Cat(instr[20:31], instr[31].replicate(21))
+        Simm = Cat(instr[7:12], instr[25:31], instr[31].replicate(21))
         Bimm = Cat(0, instr[8:12], instr[25:31], instr[7],
-            Repl(instr[31], 20))
+            instr[31].replicate(20))
         Jimm = Cat(0, instr[21:31], instr[20], instr[12:20],
-            Repl(instr[31], 12))
+            instr[31].replicate(12))
         self.Iimm = Iimm
 
         # Register addresses decoder

@@ -61,7 +61,7 @@ class SOC(Elaboratable):
             memory.mem_addr.eq(cpu.mem_addr),
             memory.mem_rstrb.eq(isRAM & cpu.mem_rstrb),
             memory.mem_wdata.eq(cpu.mem_wdata),
-            memory.mem_wmask.eq(Repl(isRAM, 4) & cpu.mem_wmask),
+            memory.mem_wmask.eq(isRAM.replicate(4) & cpu.mem_wmask),
             ram_rdata.eq(memory.mem_rdata),
             cpu.mem_rdata.eq(Mux(isRAM, ram_rdata, io_rdata))
         ]

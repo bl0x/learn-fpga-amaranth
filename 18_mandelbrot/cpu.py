@@ -68,7 +68,7 @@ class CPU(Elaboratable):
 
         # Extend a signal with a sign bit repeated n times
         def SignExtend(signal, sign, n):
-            return Cat(signal, Repl(sign, n))
+            return Cat(signal, sign.replicate(n))
 
         # Immediate format decoder
         Uimm = Signal(32)
@@ -77,13 +77,13 @@ class CPU(Elaboratable):
         Bimm = Signal(32)
         Jimm = Signal(32)
         m.d.comb += [
-            Uimm.eq(Cat(Repl(0, 12), instr[12:32])),
-            Iimm.eq(Cat(instr[20:31], Repl(instr[31], 21))),
-            Simm.eq(Cat(instr[7:12], instr[25:31], Repl(instr[31], 21))),
+            Uimm.eq(Cat(Const(0).replicate(12), instr[12:32])),
+            Iimm.eq(Cat(instr[20:31], instr[31].replicate(21))),
+            Simm.eq(Cat(instr[7:12], instr[25:31], instr[31].replicate(21))),
             Bimm.eq(Cat(0, instr[8:12], instr[25:31], instr[7],
-                Repl(instr[31], 20))),
+                instr[31].replicate(20))),
             Jimm.eq(Cat(0, instr[21:31], instr[20], instr[12:20],
-                Repl(instr[31], 12)))
+                instr[31].replicate(12)))
         ]
         self.Iimm = Iimm
 
@@ -269,7 +269,7 @@ class CPU(Elaboratable):
                 Mux(fsm.ongoing("WAIT_INSTR") | fsm.ongoing("FETCH_INSTR"),
                     pc, loadStoreAddr)),
             self.mem_rstrb.eq(fsm.ongoing("FETCH_INSTR") | fsm.ongoing("LOAD")),
-            self.mem_wmask.eq(Repl(fsm.ongoing("STORE"), 4) & store_wmask)
+            self.mem_wmask.eq(fsm.ongoing("STORE").replicate(4) & store_wmask)
         ]
 
 
