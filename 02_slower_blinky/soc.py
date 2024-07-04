@@ -1,13 +1,16 @@
-from amaranth import *
+from amaranth import Signal, Module
+from amaranth.lib import wiring
+from amaranth.lib.wiring import In, Out
 
 # Import the new Clockworks class that handles creating new clock signals
 from clockworks import Clockworks
 
-class SOC(Elaboratable):
+class SOC(wiring.Component):
+
+    leds: Out(5)
 
     def __init__(self):
-
-        self.leds = Signal(5)
+        super().__init__()
 
     def elaborate(self, platform):
 

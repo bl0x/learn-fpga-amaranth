@@ -1,8 +1,12 @@
-from amaranth import *
+from amaranth import Signal, Module, ClockDomain, ClockSignal
+from amaranth.lib import wiring
+from amaranth.lib.wiring import In, Out
 
 # This module handles clock division and provides a new 'slow' clock domain
 
-class Clockworks(Elaboratable):
+class Clockworks(wiring.Component):
+
+    o_slow: Out(1)
 
     def __init__(self, slow=0, sim_slow=None):
 
@@ -16,9 +20,11 @@ class Clockworks(Elaboratable):
         else:
             self.sim_slow = sim_slow
 
+        super().__init__()
+
     def elaborate(self, platform):
 
-        clk = Signal()
+        o_clk = Signal()
         m = Module()
 
         if self.slow != 0:
@@ -32,17 +38,17 @@ class Clockworks(Elaboratable):
 
             slow_clk = Signal(slow_bit + 1)
             m.d.sync += slow_clk.eq(slow_clk + 1)
-            m.d.comb += clk.eq(slow_clk[slow_bit])
+            m.d.comb += o_clk.eq(slow_clk[slow_bit])
 
         else:
             # When no division is requested, just use the clock signal of
             # the default 'sync' domain.
-            m.d.comb += clk.eq(ClockSignal("sync"))
+            m.d.comb += o_clk.eq(ClockSignal("sync"))
 
         # Create the new clock domain
         m.domains += ClockDomain("slow")
 
         # Assign the slow clock to the clock signal of the new domain
-        m.d.comb += ClockSignal("slow").eq(clk)
+        m.d.comb += ClockSignal("slow").eq(o_clk)
 
         return m

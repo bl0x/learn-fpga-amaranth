@@ -1,5 +1,4 @@
-from amaranth import *
-from amaranth.sim import *
+from amaranth.sim import Simulator
 
 from soc import SOC
 
