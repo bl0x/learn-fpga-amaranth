@@ -149,8 +149,6 @@ class SOC(Elaboratable):
 
         # Main state machine
         with m.FSM(reset="FETCH_INSTR", domain="slow") as fsm:
-            # Assign important signals to LEDS
-            m.d.comb += self.leds.eq(Mux(isSystem, 31, (1 << fsm.state)))
             with m.State("FETCH_INSTR"):
                 m.d.slow += instr.eq(mem[pc])
                 m.next = "FETCH_REGS"
@@ -163,6 +161,10 @@ class SOC(Elaboratable):
             with m.State("EXECUTE"):
                 m.d.slow += pc.eq(pc + 1)
                 m.next = "FETCH_INSTR"
+
+        # Assign important signals to LEDS
+        # Note: fsm.state is only accessible outside of the FSM context
+        m.d.comb += self.leds.eq(Mux(isSystem, 31, (1 << fsm.state)))
 
         # Register write back
         writeBackData = aluOut
