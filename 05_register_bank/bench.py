@@ -5,38 +5,37 @@ from soc import SOC
 
 soc = SOC()
 
-sim = Simulator(soc)
-
 prev_clk = 0
 
-def proc():
+async def testbench(ctx):
     while True:
         global prev_clk
-        clk = yield soc.slow_clk
+        clk = ctx.get(soc.slow_clk)
         if prev_clk == 0 and prev_clk != clk:
-            print("pc={}".format((yield soc.pc)))
-            print("instr={:#032b}".format((yield soc.instr)))
-            print("LEDS = {:05b}".format((yield soc.leds)))
-            if (yield soc.isALUreg):
+            print("pc={}".format(ctx.get(soc.pc)))
+            print("instr={:#032b}".format(ctx.get(soc.instr)))
+            print("LEDS = {:05b}".format(ctx.get(soc.leds)))
+            if ctx.get(soc.isALUreg):
                 print("ALUreg rd={} rs1={} rs2={} funct3={}".format(
-                    (yield soc.rdId), (yield soc.rs1Id), (yield soc.rs2Id),
-                    (yield soc.funct3)))
-            if (yield soc.isALUimm):
+                    ctx.get(soc.rdId), ctx.get(soc.rs1Id), ctx.get(soc.rs2Id),
+                    ctx.get(soc.funct3)))
+            if ctx.get(soc.isALUimm):
                 print("ALUimm rd={} rs1={} imm={} funct3={}".format(
-                    (yield soc.rdId), (yield soc.rs1Id), (yield soc.Iimm),
-                    (yield soc.funct3)))
-            if (yield soc.isLoad):
+                    ctx.get(soc.rdId), ctx.get(soc.rs1Id), ctx.get(soc.Iimm),
+                    ctx.get(soc.funct3)))
+            if ctx.get(soc.isLoad):
                 print("LOAD")
-            if (yield soc.isStore):
+            if ctx.get(soc.isStore):
                 print("STORE")
-            if (yield soc.isSystem):
+            if ctx.get(soc.isSystem):
                 print("SYSTEM")
                 break
-        yield
+        await ctx.tick()
         prev_clk = clk
 
+sim = Simulator(soc)
 sim.add_clock(1e-6)
-sim.add_sync_process(proc)
+sim.add_testbench(testbench)
 
 with sim.write_vcd('bench.vcd', 'bench.gtkw', traces=soc.ports):
     # Let's run for a quite long time
