@@ -8,6 +8,7 @@ This code repository is only meant as a supplement to Bruno Levy's main reposito
 
 Using Amaranth HDL the code can certainly be simplified / restructured, but the aim of this project is to keep close to the original.
 
+Note: The repository is currently undergoing a transition to incorporate language changes from Amaranth HDL 0.5. If you want to use older Amaranth versions, check out the tag 'pre-amaranth-0.5'.
 
 ### Board support
 
