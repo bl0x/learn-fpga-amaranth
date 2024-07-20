@@ -19,7 +19,7 @@ class SOC(wiring.Component):
         count = Signal(5)
 
         # Instantiate the clockwork with a divider of 2^21
-        cw = Clockworks(slow=21)
+        cw = Clockworks(m, slow=21)
 
         # Add the clockwork to the top module. If this is not done,
         # the logic will not be instantiated.

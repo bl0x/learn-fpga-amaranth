@@ -12,7 +12,7 @@ class SOC(Elaboratable):
 
         m = Module()
 
-        cw = Clockworks(slow=21)
+        cw = Clockworks(m, slow=21)
         m.submodules.cw = cw
 
         sequence = [

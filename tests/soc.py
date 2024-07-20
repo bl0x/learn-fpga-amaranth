@@ -21,7 +21,7 @@ class SOC(Elaboratable):
         simulation = platform is None
 
         m = Module()
-        cw = Clockworks()
+        cw = Clockworks(m)
         memory = DomainRenamer("slow")(Mem(simulation=simulation))
         cpu = DomainRenamer("slow")(CPU())
         uart_tx = DomainRenamer("slow")(

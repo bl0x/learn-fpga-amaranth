@@ -22,7 +22,7 @@ class SOC(Elaboratable):
         print("clock frequency = {}".format(clk_frequency))
 
         m = Module()
-        cw = Clockworks()
+        cw = Clockworks(m)
         memory = DomainRenamer("slow")(Mem())
         cpu = DomainRenamer("slow")(CPU())
         uart_tx = DomainRenamer("slow")(

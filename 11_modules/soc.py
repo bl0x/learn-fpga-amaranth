@@ -17,7 +17,7 @@ class SOC(Elaboratable):
     def elaborate(self, platform):
 
         m = Module()
-        cw = Clockworks(slow=19, sim_slow=10)
+        cw = Clockworks(m, slow=19, sim_slow=10)
         memory = DomainRenamer("slow")(Memory())
         cpu = DomainRenamer("slow")(CPU())
         m.submodules.cw = cw

@@ -4,11 +4,16 @@ from amaranth.lib.wiring import In, Out
 
 # This module handles clock division and provides a new 'slow' clock domain
 
+clockworks_domain_name = "slow"
+
 class Clockworks(wiring.Component):
 
     o_slow: Out(1)
 
-    def __init__(self, slow=0, sim_slow=None):
+    def __init__(self, module, slow=0, sim_slow=None):
+
+        # Since amaranth 0.6 clock domains do not propagate upwards (RFC59)
+        module.domains += ClockDomain(clockworks_domain_name)
 
         # Since the module provides a new clock domain, which is accessible
         # via the top level module, we don't need to explicitly provide the

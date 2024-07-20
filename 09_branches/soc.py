@@ -31,7 +31,7 @@ class SOC(Elaboratable):
 
         m = Module()
 
-        cw = Clockworks(slow=21, sim_slow=10)
+        cw = Clockworks(m, slow=21, sim_slow=10)
         m.submodules.cw = cw
 
         # Program counter
